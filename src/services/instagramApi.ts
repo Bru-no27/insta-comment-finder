@@ -52,102 +52,175 @@ export const fetchInstagramComments = async (
   }
 
   try {
-    console.log('Buscando comentários para post ID:', postId);
-    console.log('URL original:', postUrl);
+    console.log('🔍 Testando API com Post ID:', postId);
+    console.log('📱 URL original:', postUrl);
     
     // Configuração da API
     const API_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
     const API_HOST = 'instagram-scrapper-posts-reels-stories-downloader.p.rapidapi.com';
     
-    console.log('Conectando à Instagram Scrapper API...');
-    console.log('API Host:', API_HOST);
-    console.log('API Key (primeiros 10 chars):', API_KEY.substring(0, 10) + '...');
-
-    // Vamos tentar diferentes endpoints para testar a conectividade
-    const endpoints = [
-      { name: 'hashtag_search', url: `https://${API_HOST}/hashtag_search_by_query?hashtag=test&count=5` },
-      { name: 'user_info', url: `https://${API_HOST}/user_info?username=instagram` },
-      { name: 'post_info', url: `https://${API_HOST}/post_info?shortcode=${postId}` }
+    // Lista de endpoints possíveis para testar
+    const possibleEndpoints = [
+      // Endpoints para posts/media
+      `/media/${postId}`,
+      `/post/${postId}`,
+      `/post_details/${postId}`,
+      `/media_info/${postId}`,
+      `/get_post/${postId}`,
+      
+      // Endpoints para comentários
+      `/comments/${postId}`,
+      `/post_comments/${postId}`,
+      `/media_comments/${postId}`,
+      `/get_comments/${postId}`,
+      
+      // Endpoints com query params
+      `/media?shortcode=${postId}`,
+      `/post?id=${postId}`,
+      `/comments?post_id=${postId}`,
+      
+      // Endpoints gerais para testar conectividade
+      `/health`,
+      `/status`,
+      `/`,
     ];
 
-    let apiConnected = false;
-    let lastError = null;
-
-    for (const endpoint of endpoints) {
+    console.log('🧪 Testando endpoints disponíveis...');
+    
+    for (const endpoint of possibleEndpoints) {
       try {
-        console.log(`Testando endpoint: ${endpoint.name}`);
-        console.log(`URL completa: ${endpoint.url}`);
+        const testUrl = `https://${API_HOST}${endpoint}`;
+        console.log(`⚡ Testando: ${endpoint}`);
         
-        const testResponse = await fetch(endpoint.url, {
+        const response = await fetch(testUrl, {
           method: 'GET',
           headers: {
             'X-RapidAPI-Key': API_KEY,
             'X-RapidAPI-Host': API_HOST,
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
           },
         });
 
-        console.log(`Status ${endpoint.name}:`, testResponse.status);
-        console.log(`Headers enviados:`, {
-          'X-RapidAPI-Key': API_KEY.substring(0, 10) + '...',
-          'X-RapidAPI-Host': API_HOST
-        });
-
-        if (testResponse.ok) {
-          const testData = await testResponse.json();
-          console.log(`✅ ${endpoint.name} funcionando!`, testData);
-          apiConnected = true;
-          break;
-        } else {
-          const errorText = await testResponse.text();
-          console.log(`❌ ${endpoint.name} falhou:`, testResponse.status, errorText);
-          lastError = {
-            status: testResponse.status,
-            message: errorText,
-            endpoint: endpoint.name
-          };
+        console.log(`📊 Status ${endpoint}:`, response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`✅ SUCESSO em ${endpoint}:`, data);
+          
+          // Se encontrou dados, tenta extrair comentários
+          if (data && typeof data === 'object') {
+            const extractedComments = extractCommentsFromResponse(data, filter);
+            if (extractedComments.length > 0) {
+              return {
+                comments: extractedComments,
+                total: extractedComments.length,
+                status: 'success',
+                message: `Dados obtidos via ${endpoint}`
+              };
+            }
+          }
+          
+        } else if (response.status !== 404) {
+          // Não é 404, pode ser útil para debug
+          const errorText = await response.text();
+          console.log(`⚠️ Erro ${response.status} em ${endpoint}:`, errorText);
         }
+        
       } catch (endpointError) {
-        console.log(`❌ Erro no endpoint ${endpoint.name}:`, endpointError);
-        lastError = {
-          status: 'network_error',
-          message: endpointError instanceof Error ? endpointError.message : 'Erro de rede',
-          endpoint: endpoint.name
-        };
+        console.log(`❌ Erro de rede em ${endpoint}:`, endpointError);
       }
     }
 
-    // Se a API está conectada, use simulação informando o status
-    if (apiConnected) {
-      console.log('✅ API conectada com sucesso!');
-      const simulationResult = generateAdvancedSimulation(postUrl, filter);
-      return {
-        ...simulationResult,
-        status: 'success',
-        message: 'API conectada! Usando simulação para comentários (endpoint específico não disponível).'
-      };
-    } else {
-      // API não funcionou, mas vamos retornar erro detalhado
-      console.log('❌ API não funcionou em nenhum endpoint');
-      const simulationResult = generateAdvancedSimulation(postUrl, filter);
-      return {
-        ...simulationResult,
-        status: 'error',
-        message: `Erro API ${lastError?.status}: ${lastError?.message}. Usando simulação como fallback.`
-      };
-    }
-
-  } catch (error) {
-    console.error('❌ Erro geral ao conectar com a API:', error);
-    
-    // Fallback para simulação em caso de erro
+    // Se chegou até aqui, nenhum endpoint funcionou
+    console.log('❌ Nenhum endpoint funcionou - usando simulação');
     const simulationResult = generateAdvancedSimulation(postUrl, filter);
     return {
       ...simulationResult,
       status: 'error',
-      message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Usando simulação.`
+      message: 'API não possui endpoints compatíveis. Usando simulação inteligente.'
     };
+
+  } catch (error) {
+    console.error('❌ Erro geral na API:', error);
+    const simulationResult = generateAdvancedSimulation(postUrl, filter);
+    return {
+      ...simulationResult,
+      status: 'error',
+      message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`
+    };
+  }
+};
+
+// Função para extrair comentários de diferentes estruturas de resposta
+const extractCommentsFromResponse = (data: any, filter?: string): InstagramComment[] => {
+  console.log('🔬 Analisando estrutura da resposta:', data);
+  
+  let comments: InstagramComment[] = [];
+  
+  // Tenta diferentes caminhos onde os comentários podem estar
+  const possiblePaths = [
+    data.comments,
+    data.data?.comments,
+    data.result?.comments,
+    data.media?.comments,
+    data.post?.comments,
+    data.edge_media_to_comment?.edges,
+    data.comments?.data,
+    Array.isArray(data) ? data : null
+  ];
+
+  for (const path of possiblePaths) {
+    if (Array.isArray(path)) {
+      console.log(`📝 Encontrados ${path.length} itens em um dos caminhos`);
+      
+      comments = path.map((item: any, index: number) => ({
+        id: item.id || item.node?.id || `api_${index}`,
+        username: item.username || item.user?.username || item.node?.owner?.username || `user_${index}`,
+        text: item.text || item.comment || item.node?.text || item.message || 'Comentário sem texto',
+        timestamp: formatTimestamp(item.timestamp || item.created_time || item.node?.created_at),
+        likes: item.likes || item.like_count || item.node?.edge_liked_by?.count || 0
+      })).filter(comment => 
+        comment.username !== `user_${comments.indexOf(comment)}` || 
+        comment.text !== 'Comentário sem texto'
+      );
+      
+      if (comments.length > 0) {
+        console.log(`✅ Extraídos ${comments.length} comentários válidos`);
+        break;
+      }
+    }
+  }
+
+  // Aplica filtro se fornecido
+  if (filter && filter.trim() && comments.length > 0) {
+    const originalLength = comments.length;
+    comments = comments.filter(comment => 
+      comment.username.toLowerCase().includes(filter.toLowerCase()) ||
+      comment.text.toLowerCase().includes(filter.toLowerCase())
+    );
+    console.log(`🔍 Filtro aplicado: ${originalLength} → ${comments.length} comentários`);
+  }
+
+  return comments;
+};
+
+// Função para formatar timestamp
+const formatTimestamp = (timestamp: any): string => {
+  if (!timestamp) return 'agora';
+  
+  try {
+    const date = new Date(timestamp * 1000); // Assume Unix timestamp
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHours < 1) return 'agora';
+    if (diffHours < 24) return `${diffHours}h`;
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays}d`;
+  } catch {
+    return 'agora';
   }
 };
 
