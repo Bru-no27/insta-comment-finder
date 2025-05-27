@@ -53,6 +53,7 @@ export const fetchInstagramComments = async (
   try {
     console.log('🔍 Buscando dados da API para Post ID:', postId);
     console.log('📱 URL original:', postUrl);
+    console.log('🔍 Filtro aplicado:', filter);
     
     // Configuração da API
     const API_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
@@ -79,6 +80,7 @@ export const fetchInstagramComments = async (
         const extractedComments = processApiResponse(data, filter);
         
         if (extractedComments.length > 0) {
+          console.log(`✅ ${extractedComments.length} comentários encontrados após filtro`);
           return {
             comments: extractedComments,
             total: extractedComments.length,
@@ -121,6 +123,7 @@ export const fetchInstagramComments = async (
 // Função para processar resposta da API
 const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
   console.log('🔬 Processando resposta da API:', data);
+  console.log('🔍 Filtro recebido:', filter);
   
   let comments: InstagramComment[] = [];
   
@@ -150,6 +153,9 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
         likes: Math.floor(Math.random() * 50)
       };
     });
+    
+    console.log(`📝 Comentários gerados: ${comments.length}`);
+    console.log('👤 Usernames disponíveis:', comments.map(c => c.username));
   }
   
   // Tenta outros caminhos possíveis para comentários
@@ -182,11 +188,28 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
   // Aplica filtro se fornecido
   if (filter && filter.trim() && comments.length > 0) {
     const originalLength = comments.length;
-    comments = comments.filter(comment => 
-      comment.username.toLowerCase().includes(filter.toLowerCase()) ||
-      comment.text.toLowerCase().includes(filter.toLowerCase())
-    );
+    const filterLower = filter.toLowerCase().trim();
+    
+    console.log(`🔍 Aplicando filtro: "${filterLower}"`);
+    
+    comments = comments.filter(comment => {
+      const usernameMatch = comment.username.toLowerCase().includes(filterLower);
+      const textMatch = comment.text.toLowerCase().includes(filterLower);
+      
+      if (usernameMatch || textMatch) {
+        console.log(`✅ Match encontrado: ${comment.username} - ${comment.text}`);
+      }
+      
+      return usernameMatch || textMatch;
+    });
+    
     console.log(`🔍 Filtro aplicado: ${originalLength} → ${comments.length} comentários`);
+    
+    if (comments.length === 0) {
+      console.log('⚠️ Nenhum comentário encontrado após filtro!');
+      console.log(`🔍 Filtro usado: "${filterLower}"`);
+      console.log('👤 Usernames disponíveis eram:', data.users?.slice(0, 5).map((u: any) => u.username));
+    }
   }
 
   return comments;
