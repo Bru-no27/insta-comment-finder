@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import SearchForm from '@/components/SearchForm';
 import CommentList from '@/components/CommentList';
@@ -214,7 +213,7 @@ const Index = () => {
                     disabled={isLoading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Cole os dados JSON obtidos diretamente do Instagram (formato: {"users": [...]})
+                    Cole os dados JSON obtidos diretamente do Instagram (formato: {JSON.stringify({users: []})})
                   </p>
                 </div>
                 <Button
