@@ -131,7 +131,8 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
   if (data.users && Array.isArray(data.users)) {
     console.log(`👥 Encontrados ${data.users.length} usuários - convertendo para comentários`);
     
-    comments = data.users.slice(0, 20).map((user: any, index: number) => {
+    // Aumentado para buscar mais usuários
+    comments = data.users.slice(0, 50).map((user: any, index: number) => {
       const commentTemplates = [
         "Que post incrível! 😍",
         "Amei essa foto! ❤️",
@@ -142,7 +143,12 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
         "Que legal! 🌟",
         "Adorei! 💕",
         "Show! 👍",
-        "Muito bom! 🙌"
+        "Muito bom! 🙌",
+        "Incrível! 😱",
+        "Que vibe boa! 🌈",
+        "Perfeição! ✨",
+        "Amando! 💖",
+        "Maravilhoso! 🎉"
       ];
       
       return {
@@ -214,7 +220,7 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
     if (comments.length === 0) {
       console.log('⚠️ Nenhum comentário encontrado após filtro!');
       console.log(`🔍 Filtro usado: "${filterLower}"`);
-      console.log('👤 Usernames disponíveis eram:', data.users?.slice(0, 10).map((u: any) => u.username));
+      console.log('👤 Usernames disponíveis eram:', data.users?.slice(0, 20).map((u: any) => u.username));
       
       // Verifica se o username existe exatamente
       const exactMatch = data.users?.find((u: any) => u.username === filterLower);
@@ -242,7 +248,8 @@ const generateIntelligentSimulation = (apiData: any, url: string, filter?: strin
   console.log('🧠 Gerando simulação inteligente baseada nos dados da API');
   
   const usersFromApi = apiData.users || [];
-  const realUsernames = usersFromApi.slice(0, 15).map((user: any) => user.username).filter(Boolean);
+  // Aumentado para incluir mais usuários reais
+  const realUsernames = usersFromApi.slice(0, 40).map((user: any) => user.username).filter(Boolean);
   
   const commentVariations = [
     "Que foto linda! 😍",
@@ -259,7 +266,12 @@ const generateIntelligentSimulation = (apiData: any, url: string, filter?: strin
     "Muito bom! ⭐",
     "Lindo demais! 🥰",
     "Que vibe boa 🌈",
-    "Simplesmente perfeito 👌"
+    "Simplesmente perfeito 👌",
+    "Incrível! 😱",
+    "Que lugar lindo! 🌅",
+    "Amando! 💖",
+    "Que momento! 📷",
+    "Perfeição pura! ✨"
   ];
 
   let comments: InstagramComment[] = [];
@@ -300,10 +312,12 @@ const generateIntelligentSimulation = (apiData: any, url: string, filter?: strin
 
   // Aplica filtro
   if (filter && filter.trim()) {
+    const originalCount = comments.length;
     comments = comments.filter(comment => 
       comment.username.toLowerCase().includes(filter.toLowerCase()) ||
       comment.text.toLowerCase().includes(filter.toLowerCase())
     );
+    console.log(`🔍 Filtro aplicado na simulação inteligente: ${originalCount} → ${comments.length}`);
   }
 
   return {
@@ -346,7 +360,10 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
       "Inspiração pura! 🔥",
       "Perfeita como sempre ❤️",
       "Que estilo maravilhoso 👑",
-      "Adorei o outfit completo 💫"
+      "Adorei o outfit completo 💫",
+      "Esse look é tudo! 🌟",
+      "Que produção linda! 💄",
+      "Onde encontro essa peça? 🛍️"
     ],
     travel: [
       "Que lugar incrível! 🌎",
@@ -355,7 +372,10 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
       "Que vista maravilhosa 🌅",
       "Quero muito conhecer esse lugar 🗺️",
       "Foto perfeita! 📸",
-      "Que destino dos sonhos 💭"
+      "Que destino dos sonhos 💭",
+      "Que viagem incrível! 🎒",
+      "Morendo de inveja! 😍",
+      "Quando vou conseguir ir aí? 🥺"
     ],
     food: [
       "Que delícia! 🤤",
@@ -364,7 +384,10 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
       "Que fome que me deu 😋",
       "Parece delicioso demais 🍴",
       "Vou tentar fazer em casa 🏠",
-      "Que apresentação linda 🎨"
+      "Que apresentação linda 🎨",
+      "Já estou com água na boca! 💧",
+      "Que sabor deve ter! 😍",
+      "Preciso experimentar isso! 🙋‍♀️"
     ],
     general: [
       "Foto linda! 😍",
@@ -373,15 +396,28 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
       "Que incrível 🌟",
       "Maravilhoso ✨",
       "Inspirador 🙌",
-      "Que legal! 🎉"
+      "Que legal! 🎉",
+      "Show! 👍",
+      "Lindo! 🥰",
+      "Que momento! 📷"
     ]
   };
 
+  // Usernames mais variados e realistas
   const usernames = [
     "maria_silva", "joao_santos", "ana_costa", "carlos_oliveira", 
     "lucia_ferreira", "pedro_alves", "clara_mendes", "rafael_lima",
     "juliana_rocha", "bruno_carvalho", "camila_souza", "diego_martins",
-    "fernanda_dias", "gustavo_reis", "helena_torres", "igor_campos"
+    "fernanda_dias", "gustavo_reis", "helena_torres", "igor_campos",
+    "beatriz_santos", "rodrigo_silva", "amanda_oliveira", "felipe_costa",
+    "caroline_alves", "thiago_ferreira", "gabriela_lima", "leonardo_rocha",
+    "isabella_carvalho", "eduardo_souza", "leticia_martins", "vinicius_dias",
+    "larissa_reis", "fabio_torres", "natalia_campos", "andre_santos",
+    "priscila_silva", "mateus_oliveira", "vanessa_costa", "daniel_alves",
+    "tatiane_ferreira", "marco_lima", "simone_rocha", "paulo_carvalho",
+    "renata_souza", "alexandre_martins", "monique_dias", "jefferson_reis",
+    "patricia_torres", "roberto_campos", "claudia_santos", "sergio_silva",
+    "sidy__joaopedro", "joao_pedro123", "maria_eduarda", "ana_beatriz"
   ];
 
   // Determina categoria baseada no URL
@@ -397,24 +433,27 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
   }
 
   const templates = commentTemplates[category];
-  const numComments = Math.floor(Math.random() * 15) + 10; // 10-25 comentários
+  // Aumentado significativamente o número de comentários
+  const numComments = Math.floor(Math.random() * 40) + 60; // 60-100 comentários
   let comments: InstagramComment[] = [];
+
+  console.log(`🎭 Gerando ${numComments} comentários simulados`);
 
   for (let i = 0; i < numComments; i++) {
     const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
     const randomUsername = usernames[Math.floor(Math.random() * usernames.length)];
-    const randomHours = Math.floor(Math.random() * 72) + 1;
+    const randomHours = Math.floor(Math.random() * 168) + 1; // até 1 semana
 
     comments.push({
       id: `sim_${i + 1}`,
       username: randomUsername,
       text: randomTemplate,
-      timestamp: `${randomHours}h`,
-      likes: Math.floor(Math.random() * 50)
+      timestamp: randomHours > 24 ? `${Math.floor(randomHours / 24)}d` : `${randomHours}h`,
+      likes: Math.floor(Math.random() * 150)
     });
   }
 
-  // Adicionar alguns comentários especiais
+  // Adicionar comentários especiais com menções
   const extraComments: InstagramComment[] = [
     {
       id: `sim_${comments.length + 1}`,
@@ -429,6 +468,13 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
       text: "👏👏👏",
       timestamp: `${Math.floor(Math.random() * 12) + 1}h`,
       likes: Math.floor(Math.random() * 30)
+    },
+    {
+      id: `sim_${comments.length + 3}`,
+      username: "sidy__joaopedro",
+      text: "Incrível! Adorei essa publicação! 🔥",
+      timestamp: "2h",
+      likes: 15
     }
   ];
 
@@ -436,10 +482,17 @@ const generateAdvancedSimulation = (url: string, filter?: string): InstagramApiR
 
   // Aplicar filtro se fornecido
   if (filter && filter.trim()) {
+    const originalCount = comments.length;
+    const filterLower = filter.toLowerCase();
+    
+    console.log(`🔍 Aplicando filtro "${filterLower}" em ${originalCount} comentários simulados`);
+    
     comments = comments.filter(comment => 
-      comment.username.toLowerCase().includes(filter.toLowerCase()) ||
-      comment.text.toLowerCase().includes(filter.toLowerCase())
+      comment.username.toLowerCase().includes(filterLower) ||
+      comment.text.toLowerCase().includes(filterLower)
     );
+    
+    console.log(`🔍 Filtro aplicado na simulação: ${originalCount} → ${comments.length} comentários`);
   }
 
   return {
