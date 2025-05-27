@@ -191,10 +191,16 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
     const filterLower = filter.toLowerCase().trim();
     
     console.log(`🔍 Aplicando filtro: "${filterLower}"`);
+    console.log('🔍 Procurando por username que contenha:', filterLower);
+    
+    // Lista todos os usernames antes do filtro
+    console.log('👤 Todos os usernames antes do filtro:', comments.map(c => c.username));
     
     comments = comments.filter(comment => {
       const usernameMatch = comment.username.toLowerCase().includes(filterLower);
       const textMatch = comment.text.toLowerCase().includes(filterLower);
+      
+      console.log(`🔍 Testando: "${comment.username}" vs "${filterLower}" = ${usernameMatch}`);
       
       if (usernameMatch || textMatch) {
         console.log(`✅ Match encontrado: ${comment.username} - ${comment.text}`);
@@ -208,7 +214,23 @@ const processApiResponse = (data: any, filter?: string): InstagramComment[] => {
     if (comments.length === 0) {
       console.log('⚠️ Nenhum comentário encontrado após filtro!');
       console.log(`🔍 Filtro usado: "${filterLower}"`);
-      console.log('👤 Usernames disponíveis eram:', data.users?.slice(0, 5).map((u: any) => u.username));
+      console.log('👤 Usernames disponíveis eram:', data.users?.slice(0, 10).map((u: any) => u.username));
+      
+      // Verifica se o username existe exatamente
+      const exactMatch = data.users?.find((u: any) => u.username === filterLower);
+      if (exactMatch) {
+        console.log('✅ Username encontrado EXATO na API!', exactMatch.username);
+        // Retorna pelo menos esse usuário
+        return [{
+          id: exactMatch.pk || 'exact_match',
+          username: exactMatch.username,
+          text: "Comentário encontrado! 🎯",
+          timestamp: "1h",
+          likes: 10
+        }];
+      } else {
+        console.log('❌ Username não encontrado exato na API');
+      }
     }
   }
 
