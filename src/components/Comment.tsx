@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { User, Clock } from 'lucide-react';
+import { User, Clock, Heart } from 'lucide-react';
 import type { Comment as CommentType } from '@/pages/Index';
 
 interface CommentProps {
@@ -45,6 +45,12 @@ const Comment = ({ comment, searchFilter }: CommentProps) => {
               <Clock className="h-3 w-3" />
               <span>{comment.timestamp}</span>
             </div>
+            {comment.likes !== undefined && comment.likes > 0 && (
+              <div className="flex items-center gap-1 text-gray-500 text-sm ml-auto">
+                <Heart className="h-3 w-3" />
+                <span>{comment.likes}</span>
+              </div>
+            )}
           </div>
           
           {/* Comment text */}
