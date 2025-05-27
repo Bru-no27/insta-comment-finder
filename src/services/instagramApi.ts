@@ -1,3 +1,4 @@
+
 // Serviço para integração com API do Instagram
 // Usando Instagram Scrapper Posts Reels Stories Downloader API
 
@@ -52,50 +53,101 @@ export const fetchInstagramComments = async (
 
   try {
     console.log('Buscando comentários para post ID:', postId);
+    console.log('URL original:', postUrl);
     
-    // Configuração da API que você realmente tem acesso
+    // Configuração da API
     const API_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
     const API_HOST = 'instagram-scrapper-posts-reels-stories-downloader.p.rapidapi.com';
     
     console.log('Conectando à Instagram Scrapper API...');
+    console.log('API Host:', API_HOST);
+    console.log('API Key (primeiros 10 chars):', API_KEY.substring(0, 10) + '...');
 
-    // Vamos tentar buscar usando hashtag search como exemplo para testar conectividade
-    const testResponse = await fetch(`https://${API_HOST}/hashtag_search_by_query?hashtag=test`, {
-      method: 'GET',
-      headers: {
-        'X-RapidAPI-Key': API_KEY,
-        'X-RapidAPI-Host': API_HOST,
-      },
-    });
+    // Vamos tentar diferentes endpoints para testar a conectividade
+    const endpoints = [
+      { name: 'hashtag_search', url: `https://${API_HOST}/hashtag_search_by_query?hashtag=test&count=5` },
+      { name: 'user_info', url: `https://${API_HOST}/user_info?username=instagram` },
+      { name: 'post_info', url: `https://${API_HOST}/post_info?shortcode=${postId}` }
+    ];
 
-    console.log('Status da resposta da API:', testResponse.status);
-    
-    if (!testResponse.ok) {
-      console.log('Erro na API - status:', testResponse.status);
-      console.log('Usando simulação como fallback');
-      return generateAdvancedSimulation(postUrl, filter);
+    let apiConnected = false;
+    let lastError = null;
+
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Testando endpoint: ${endpoint.name}`);
+        console.log(`URL completa: ${endpoint.url}`);
+        
+        const testResponse = await fetch(endpoint.url, {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Key': API_KEY,
+            'X-RapidAPI-Host': API_HOST,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+        });
+
+        console.log(`Status ${endpoint.name}:`, testResponse.status);
+        console.log(`Headers enviados:`, {
+          'X-RapidAPI-Key': API_KEY.substring(0, 10) + '...',
+          'X-RapidAPI-Host': API_HOST
+        });
+
+        if (testResponse.ok) {
+          const testData = await testResponse.json();
+          console.log(`✅ ${endpoint.name} funcionando!`, testData);
+          apiConnected = true;
+          break;
+        } else {
+          const errorText = await testResponse.text();
+          console.log(`❌ ${endpoint.name} falhou:`, testResponse.status, errorText);
+          lastError = {
+            status: testResponse.status,
+            message: errorText,
+            endpoint: endpoint.name
+          };
+        }
+      } catch (endpointError) {
+        console.log(`❌ Erro no endpoint ${endpoint.name}:`, endpointError);
+        lastError = {
+          status: 'network_error',
+          message: endpointError instanceof Error ? endpointError.message : 'Erro de rede',
+          endpoint: endpoint.name
+        };
+      }
     }
 
-    const testData = await testResponse.json();
-    console.log('API funcionando! Resposta de teste:', testData);
-    
-    // Se chegou até aqui, a API está funcionando
-    // Como não temos o endpoint específico para comentários de posts,
-    // vamos usar uma simulação mais avançada informando que a API está conectada
-    const simulationResult = generateAdvancedSimulation(postUrl, filter);
-    
-    return {
-      ...simulationResult,
-      status: 'success',
-      message: 'API conectada com sucesso! Usando simulação inteligente para comentários.'
-    };
+    // Se a API está conectada, use simulação informando o status
+    if (apiConnected) {
+      console.log('✅ API conectada com sucesso!');
+      const simulationResult = generateAdvancedSimulation(postUrl, filter);
+      return {
+        ...simulationResult,
+        status: 'success',
+        message: 'API conectada! Usando simulação para comentários (endpoint específico não disponível).'
+      };
+    } else {
+      // API não funcionou, mas vamos retornar erro detalhado
+      console.log('❌ API não funcionou em nenhum endpoint');
+      const simulationResult = generateAdvancedSimulation(postUrl, filter);
+      return {
+        ...simulationResult,
+        status: 'error',
+        message: `Erro API ${lastError?.status}: ${lastError?.message}. Usando simulação como fallback.`
+      };
+    }
 
   } catch (error) {
-    console.error('Erro ao conectar com a API:', error);
+    console.error('❌ Erro geral ao conectar com a API:', error);
     
     // Fallback para simulação em caso de erro
-    console.log('Erro na conexão - usando simulação como fallback');
-    return generateAdvancedSimulation(postUrl, filter);
+    const simulationResult = generateAdvancedSimulation(postUrl, filter);
+    return {
+      ...simulationResult,
+      status: 'error',
+      message: `Erro de conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Usando simulação.`
+    };
   }
 };
 
