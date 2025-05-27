@@ -35,8 +35,8 @@ export const extractPostId = (url: string): string | null => {
 };
 
 // CONFIGURAÇÃO DA SUA CHAVE DE API DO RAPIDAPI
-// Substitua 'SUA_CHAVE_RAPIDAPI_AQUI' pela sua chave real obtida no RapidAPI
-const RAPIDAPI_KEY = 'SUA_CHAVE_RAPIDAPI_AQUI';
+// Chave de API configurada para buscar dados reais
+const RAPIDAPI_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
 
 // Configurações das APIs disponíveis com suas chaves reais
 const API_CONFIGS = [
