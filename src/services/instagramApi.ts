@@ -34,27 +34,31 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// Configurações das APIs disponíveis com rate limiting melhorado
+// CONFIGURAÇÃO DA SUA CHAVE DE API DO RAPIDAPI
+// Substitua 'SUA_CHAVE_RAPIDAPI_AQUI' pela sua chave real obtida no RapidAPI
+const RAPIDAPI_KEY = 'SUA_CHAVE_RAPIDAPI_AQUI';
+
+// Configurações das APIs disponíveis com suas chaves reais
 const API_CONFIGS = [
   {
-    name: 'Instagram Basic Display API',
-    host: 'instagram-basic-display.p.rapidapi.com',
-    endpoint: (postId: string) => `/media/${postId}/comments`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    name: 'Instagram Scraper Stable API',
+    host: 'instagram-scraper-stable.p.rapidapi.com',
+    endpoint: (postId: string) => `/post/${postId}/comments`,
+    key: RAPIDAPI_KEY,
     rateLimit: 100 // requests per hour
   },
   {
-    name: 'Instagram Graph API',
-    host: 'graph.instagram.com',
-    endpoint: (postId: string) => `/${postId}/comments?fields=id,text,username,timestamp,like_count`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    name: 'Instagram Basic Scraper',
+    host: 'instagram-basic-scraper.p.rapidapi.com',
+    endpoint: (postId: string) => `/post/${postId}`,
+    key: RAPIDAPI_KEY,
     rateLimit: 200
   },
   {
-    name: 'Instagram Web Scraper',
-    host: 'instagram-web-scraper.p.rapidapi.com',
-    endpoint: (postId: string) => `/post/${postId}/comments`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    name: 'Instagram Posts Scraper',
+    host: 'instagram-posts-scraper.p.rapidapi.com',
+    endpoint: (postId: string) => `/posts/${postId}/comments`,
+    key: RAPIDAPI_KEY,
     rateLimit: 50
   }
 ];
@@ -78,9 +82,16 @@ export const fetchInstagramComments = async (
     };
   }
 
+  // Verifica se a chave de API foi configurada
+  if (RAPIDAPI_KEY === 'SUA_CHAVE_RAPIDAPI_AQUI') {
+    console.log('⚠️ Chave de API não configurada - usando simulação');
+    return generateIntelligentSimulation(postId, postUrl, filter);
+  }
+
   console.log('🔍 Iniciando busca REAL de comentários para Post ID:', postId);
   console.log('📱 URL original:', postUrl);
   console.log('🔍 Filtro aplicado:', filter);
+  console.log('🔑 Usando chave de API configurada');
 
   // Tenta diferentes métodos em sequência com delay
   for (const [index, apiConfig] of API_CONFIGS.entries()) {
@@ -113,6 +124,12 @@ export const fetchInstagramComments = async (
       } else if (response.status === 429) {
         console.log(`⚠️ ${apiConfig.name} - Rate limit atingido (429), tentando próxima API...`);
         continue;
+      } else if (response.status === 401) {
+        console.log(`❌ ${apiConfig.name} - Chave de API inválida (401)`);
+        continue;
+      } else if (response.status === 403) {
+        console.log(`❌ ${apiConfig.name} - Acesso negado (403) - verifique sua assinatura`);
+        continue;
       } else {
         console.log(`❌ ${apiConfig.name} - Erro HTTP:`, response.status);
       }
@@ -121,9 +138,9 @@ export const fetchInstagramComments = async (
     }
   }
 
-  // Tenta método alternativo com parsing de HTML público
-  console.log('🔄 Tentando método de scraping alternativo...');
-  return await tryPublicScraping(postId, postUrl, filter);
+  // Se todas as APIs falharam, usa simulação
+  console.log('💡 Todas as APIs falharam - gerando simulação baseada no post real...');
+  return generateIntelligentSimulation(postId, postUrl, filter);
 };
 
 // Função para fazer requisição com retry e backoff exponencial
@@ -202,7 +219,7 @@ const processRealApiResponse = async (data: any, filter?: string, apiName?: stri
     
     console.log(`✅ Gerados ${comments.length} comentários baseados em usuários REAIS`);
   } else {
-    // Processa outras estruturas de dados possíveis das APIs
+    // Processa outras estruturas de dados possíveis das APIs do RapidAPI
     const possibleCommentPaths = [
       data.data,
       data.comments,
@@ -212,7 +229,10 @@ const processRealApiResponse = async (data: any, filter?: string, apiName?: stri
       data.post?.comments,
       data.media?.comments,
       data.shortcode_media?.edge_media_to_comment?.edges,
-      data.graphql?.shortcode_media?.edge_media_to_comment?.edges
+      data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
+      data.result?.comments,
+      data.comments_data,
+      data.post_comments
     ];
 
     for (const commentsData of possibleCommentPaths) {
@@ -264,55 +284,6 @@ const processRealApiResponse = async (data: any, filter?: string, apiName?: stri
   }
 
   return comments;
-};
-
-// Método alternativo usando scraping público
-const tryPublicScraping = async (postId: string, postUrl: string, filter?: string): Promise<InstagramApiResponse> => {
-  console.log('🌐 Tentando scraping de dados públicos...');
-  
-  try {
-    // Método 1: Tenta URL pública do Instagram
-    const publicUrl = `https://www.instagram.com/p/${postId}/?__a=1`;
-    
-    const response = await fetch(publicUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-      }
-    });
-    
-    if (response.ok) {
-      const html = await response.text();
-      console.log('📄 HTML público obtido, tentando extrair dados...');
-      
-      // Tenta extrair dados do script JSON embutido
-      const scriptMatch = html.match(/window\._sharedData\s*=\s*({.+?});/);
-      if (scriptMatch) {
-        const data = JSON.parse(scriptMatch[1]);
-        const realComments = await processRealApiResponse(data, filter, 'Instagram Public HTML');
-        
-        if (realComments.length > 0) {
-          return {
-            comments: realComments,
-            total: realComments.length,
-            status: 'success',
-            message: 'Comentários reais obtidos via scraping público'
-          };
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Scraping público falhou:', error);
-  }
-  
-  // Última tentativa: simulação baseada no post real
-  console.log('💡 Gerando simulação baseada no post real...');
-  return generateIntelligentSimulation(postId, postUrl, filter);
 };
 
 // Simulação inteligente mais realista
@@ -377,13 +348,17 @@ const generateIntelligentSimulation = (postId: string, postUrl: string, filter?:
     console.log(`🔍 Filtro aplicado na simulação: ${originalCount} → ${comments.length}`);
   }
 
+  const message = RAPIDAPI_KEY === 'SUA_CHAVE_RAPIDAPI_AQUI' 
+    ? `Simulação baseada no post ${postId} - Configure sua chave RapidAPI para dados reais`
+    : `Simulação baseada no post ${postId} - APIs temporariamente indisponíveis`;
+
   console.log(`✅ Simulação inteligente gerada: ${comments.length} comentários`);
 
   return {
     comments,
     total: comments.length,
     status: 'success',
-    message: `Simulação baseada no post ${postId} - Configure API keys válidas para dados reais`
+    message
   };
 };
 
