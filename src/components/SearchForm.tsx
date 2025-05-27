@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Instagram, Filter } from 'lucide-react';
+import { Search, Instagram, Filter, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,7 @@ interface SearchFormProps {
   searchFilter: string;
   setSearchFilter: (filter: string) => void;
   onSearch: () => void;
+  isLoading?: boolean;
 }
 
 const SearchForm = ({
@@ -18,11 +19,12 @@ const SearchForm = ({
   setInstagramUrl,
   searchFilter,
   setSearchFilter,
-  onSearch
+  onSearch,
+  isLoading = false
 }: SearchFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (instagramUrl.trim()) {
+    if (instagramUrl.trim() && !isLoading) {
       onSearch();
     }
   };
@@ -42,11 +44,12 @@ const SearchForm = ({
           <Input
             id="instagram-url"
             type="url"
-            placeholder="https://www.instagram.com/p/..."
+            placeholder="https://www.instagram.com/p/... ou https://www.instagram.com/reel/..."
             value={instagramUrl}
             onChange={(e) => setInstagramUrl(e.target.value)}
             className="pl-10 h-12 text-base border-gray-300 focus:border-green-500 focus:ring-green-500"
             required
+            disabled={isLoading}
           />
         </div>
         {instagramUrl && !isValidInstagramUrl(instagramUrl) && (
@@ -69,6 +72,7 @@ const SearchForm = ({
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
             className="pl-10 h-12 text-base border-gray-300 focus:border-green-500 focus:ring-green-500"
+            disabled={isLoading}
           />
         </div>
         <p className="mt-2 text-sm text-gray-600">
@@ -79,10 +83,19 @@ const SearchForm = ({
       <Button
         type="submit"
         className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base transition-colors duration-200 flex items-center gap-2"
-        disabled={!instagramUrl.trim()}
+        disabled={!instagramUrl.trim() || isLoading}
       >
-        <Search className="h-5 w-5" />
-        Buscar Comentários
+        {isLoading ? (
+          <>
+            <Loader2 className="h-5 w-5 animate-spin" />
+            Carregando...
+          </>
+        ) : (
+          <>
+            <Search className="h-5 w-5" />
+            Buscar Comentários
+          </>
+        )}
       </Button>
     </form>
   );
