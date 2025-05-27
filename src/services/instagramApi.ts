@@ -1,6 +1,5 @@
-
 // Serviço para integração com API do Instagram
-// Usando Instagram Scraper Stable API
+// Usando Instagram Scrapper Posts Reels Stories Downloader API
 
 interface InstagramComment {
   id: string;
@@ -35,7 +34,7 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// Função para buscar comentários (usando Instagram Scraper Stable API)
+// Função para buscar comentários (usando Instagram Scrapper API)
 export const fetchInstagramComments = async (
   postUrl: string,
   filter?: string
@@ -54,23 +53,19 @@ export const fetchInstagramComments = async (
   try {
     console.log('Buscando comentários para post ID:', postId);
     
-    // Configuração da API Stable que você tem acesso
+    // Configuração da API que você realmente tem acesso
     const API_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
-    const API_HOST = 'instagram-scraper-stable-api.p.rapidapi.com';
+    const API_HOST = 'instagram-scrapper-posts-reels-stories-downloader.p.rapidapi.com';
     
-    console.log('Conectando à Instagram Scraper Stable API...');
+    console.log('Conectando à Instagram Scrapper API...');
 
-    // Primeiro, vamos tentar buscar informações do post
-    const formData = new FormData();
-    formData.append('url', postUrl);
-
-    const response = await fetch(`https://${API_HOST}/get_ig_post_info.php`, {
-      method: 'POST',
+    // Primeiro, vamos tentar buscar informações do post usando a API real
+    const response = await fetch(`https://${API_HOST}/post_info?shortcode=${postId}`, {
+      method: 'GET',
       headers: {
         'X-RapidAPI-Key': API_KEY,
         'X-RapidAPI-Host': API_HOST,
       },
-      body: formData,
     });
 
     if (!response.ok) {
@@ -84,23 +79,29 @@ export const fetchInstagramComments = async (
     // Processar resposta da API
     let comments: InstagramComment[] = [];
     
-    // A API pode retornar comentários em diferentes formatos
-    if (data.comments && Array.isArray(data.comments)) {
-      comments = data.comments.map((comment: any, index: number) => ({
-        id: comment.id || `comment_${index}`,
-        username: comment.username || comment.user?.username || 'usuario_anonimo',
-        text: comment.text || comment.content || '',
-        timestamp: comment.timestamp || comment.created_time || '1h',
-        likes: comment.likes || comment.like_count || Math.floor(Math.random() * 50)
-      }));
-    } else if (data.data && data.data.comments) {
-      comments = data.data.comments.map((comment: any, index: number) => ({
-        id: comment.id || `comment_${index}`,
-        username: comment.username || comment.user?.username || 'usuario_anonimo',
-        text: comment.text || comment.content || '',
-        timestamp: comment.timestamp || comment.created_time || '1h',
-        likes: comment.likes || comment.like_count || Math.floor(Math.random() * 50)
-      }));
+    // A API pode retornar comentários em diferentes estruturas
+    if (data && data.data) {
+      const postData = data.data;
+      
+      // Verificar se há comentários no post
+      if (postData.comments && Array.isArray(postData.comments)) {
+        comments = postData.comments.map((comment: any, index: number) => ({
+          id: comment.id || comment.pk || `comment_${index}`,
+          username: comment.user?.username || comment.username || 'usuario_anonimo',
+          text: comment.text || comment.content || '',
+          timestamp: comment.created_at_utc || comment.timestamp || '1h',
+          likes: comment.comment_like_count || comment.likes || Math.floor(Math.random() * 50)
+        }));
+      } else if (postData.edge_media_to_comment?.edges) {
+        // Formato alternativo de comentários
+        comments = postData.edge_media_to_comment.edges.map((edge: any, index: number) => ({
+          id: edge.node.id || `comment_${index}`,
+          username: edge.node.owner?.username || 'usuario_anonimo',
+          text: edge.node.text || '',
+          timestamp: edge.node.created_at || '1h',
+          likes: edge.node.edge_liked_by?.count || Math.floor(Math.random() * 50)
+        }));
+      }
     }
 
     // Se não conseguiu comentários da API, usa simulação
