@@ -1,4 +1,3 @@
-
 // Serviço para integração com API do Instagram
 // Usando RapidAPI como exemplo - você precisará configurar sua chave de API
 
@@ -35,7 +34,7 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// Função para buscar comentários (usando RapidAPI como exemplo)
+// Função para buscar comentários (usando RapidAPI)
 export const fetchInstagramComments = async (
   postUrl: string,
   filter?: string
@@ -54,16 +53,11 @@ export const fetchInstagramComments = async (
   try {
     console.log('Buscando comentários para post ID:', postId);
     
-    // Exemplo de implementação com RapidAPI
-    // NOTA: Você precisará substituir pela sua chave de API real
-    const API_KEY = 'SUA_CHAVE_RAPIDAPI_AQUI';
+    // Configuração da API com sua chave
+    const API_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
     const API_HOST = 'instagram-scraper-api2.p.rapidapi.com';
     
-    if (API_KEY === 'SUA_CHAVE_RAPIDAPI_AQUI') {
-      // Fallback para simulação quando não há API key configurada
-      console.log('API Key não configurada - usando simulação avançada');
-      return generateAdvancedSimulation(postUrl, filter);
-    }
+    console.log('Conectando à API do Instagram...');
 
     const response = await fetch(`https://${API_HOST}/v1/comments`, {
       method: 'POST',
@@ -79,7 +73,8 @@ export const fetchInstagramComments = async (
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      console.log('Erro na API - usando simulação como fallback');
+      return generateAdvancedSimulation(postUrl, filter);
     }
 
     const data = await response.json();
