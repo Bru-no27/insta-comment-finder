@@ -1,4 +1,3 @@
-
 // Serviço para integração com API do Instagram
 // Usando múltiplas APIs do Instagram para maior sucesso
 
@@ -82,8 +81,10 @@ export const fetchInstagramComments = async (
     };
   }
 
-  // Verifica se a chave de API foi configurada
-  if (RAPIDAPI_KEY === 'SUA_CHAVE_RAPIDAPI_AQUI') {
+  // Verifica se a chave de API foi configurada (agora usando a chave real)
+  const isConfigured = RAPIDAPI_KEY && RAPIDAPI_KEY.length > 20;
+  
+  if (!isConfigured) {
     console.log('⚠️ Chave de API não configurada - usando simulação');
     return generateIntelligentSimulation(postId, postUrl, filter);
   }
@@ -348,7 +349,7 @@ const generateIntelligentSimulation = (postId: string, postUrl: string, filter?:
     console.log(`🔍 Filtro aplicado na simulação: ${originalCount} → ${comments.length}`);
   }
 
-  const message = RAPIDAPI_KEY === 'SUA_CHAVE_RAPIDAPI_AQUI' 
+  const message = !isConfigured
     ? `Simulação baseada no post ${postId} - Configure sua chave RapidAPI para dados reais`
     : `Simulação baseada no post ${postId} - APIs temporariamente indisponíveis`;
 
