@@ -1,3 +1,4 @@
+
 // Serviço para integração com API do Instagram
 // Usando múltiplas APIs do Instagram para maior sucesso
 
@@ -33,18 +34,17 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// CONFIGURAÇÃO DA SUA CHAVE DE API DO RAPIDAPI
 // Chave de API configurada para buscar dados reais
 const RAPIDAPI_KEY = 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924';
 
-// Configurações das APIs disponíveis com suas chaves reais
+// Configurações das APIs disponíveis
 const API_CONFIGS = [
   {
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable.p.rapidapi.com',
     endpoint: (postId: string) => `/post/${postId}/comments`,
     key: RAPIDAPI_KEY,
-    rateLimit: 100 // requests per hour
+    rateLimit: 100
   },
   {
     name: 'Instagram Basic Scraper',
@@ -65,7 +65,7 @@ const API_CONFIGS = [
 // Função para delay entre requisições
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Função principal com retry e rate limiting
+// Função principal para buscar comentários reais
 export const fetchInstagramComments = async (
   postUrl: string,
   filter?: string
@@ -81,20 +81,11 @@ export const fetchInstagramComments = async (
     };
   }
 
-  // Verifica se a chave de API foi configurada (agora usando a chave real)
-  const isConfigured = RAPIDAPI_KEY && RAPIDAPI_KEY.length > 20;
-  
-  if (!isConfigured) {
-    console.log('⚠️ Chave de API não configurada - usando simulação');
-    return generateIntelligentSimulation(postId, postUrl, filter);
-  }
-
   console.log('🔍 Iniciando busca REAL de comentários para Post ID:', postId);
   console.log('📱 URL original:', postUrl);
   console.log('🔍 Filtro aplicado:', filter);
-  console.log('🔑 Usando chave de API configurada');
 
-  // Tenta diferentes métodos em sequência com delay
+  // Tenta diferentes APIs em sequência
   for (const [index, apiConfig] of API_CONFIGS.entries()) {
     try {
       console.log(`🚀 Tentativa ${index + 1}: Testando ${apiConfig.name}`);
@@ -111,7 +102,7 @@ export const fetchInstagramComments = async (
         const data = await response.json();
         console.log(`✅ ${apiConfig.name} - Dados recebidos:`, data);
         
-        const realComments = await processRealApiResponse(data, filter, apiConfig.name);
+        const realComments = processRealApiResponse(data, filter, apiConfig.name);
         
         if (realComments.length > 0) {
           console.log(`🎉 SUCESSO! ${realComments.length} comentários REAIS encontrados via ${apiConfig.name}`);
@@ -139,12 +130,17 @@ export const fetchInstagramComments = async (
     }
   }
 
-  // Se todas as APIs falharam, usa simulação
-  console.log('💡 Todas as APIs falharam - gerando simulação baseada no post real...');
-  return generateIntelligentSimulation(postId, postUrl, filter);
+  // Se todas as APIs falharam, retorna erro
+  console.log('❌ Todas as APIs falharam - não foi possível obter dados reais');
+  return {
+    comments: [],
+    total: 0,
+    status: 'error',
+    message: 'Não foi possível buscar comentários reais. Verifique o link ou tente novamente mais tarde.'
+  };
 };
 
-// Função para fazer requisição com retry e backoff exponencial
+// Função para fazer requisição com retry
 const fetchWithRetry = async (apiConfig: any, postId: string, maxRetries: number): Promise<Response> => {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -163,7 +159,7 @@ const fetchWithRetry = async (apiConfig: any, postId: string, maxRetries: number
       }
 
       // Se for rate limit, espera antes de tentar novamente
-      const waitTime = Math.pow(2, i) * 1000; // Backoff exponencial
+      const waitTime = Math.pow(2, i) * 1000;
       console.log(`⏳ Rate limit detectado, aguardando ${waitTime}ms antes de retry ${i + 1}/${maxRetries}...`);
       await delay(waitTime);
     } catch (error) {
@@ -176,95 +172,56 @@ const fetchWithRetry = async (apiConfig: any, postId: string, maxRetries: number
   throw new Error('Max retries exceeded');
 };
 
-// Processa resposta real da API incluindo dados de usuários que curtiram
-const processRealApiResponse = async (data: any, filter?: string, apiName?: string): Promise<InstagramComment[]> => {
+// Processa resposta real da API
+const processRealApiResponse = (data: any, filter?: string, apiName?: string): InstagramComment[] => {
   console.log(`🔬 Processando resposta REAL da ${apiName}:`, data);
   
   let comments: InstagramComment[] = [];
   
-  // Verifica se os dados contêm informações de usuários (como os que você forneceu)
-  if (data.users && Array.isArray(data.users)) {
-    console.log(`📝 Encontrados ${data.users.length} usuários reais do Instagram!`);
-    
-    // Gera comentários baseados nos usuários reais que curtiram o post
-    comments = data.users.slice(0, 10000).map((user: any, index: number) => {
-      // Comentários mais naturais baseados no tipo de usuário
-      const commentTemplates = [
-        "Amazing! 🔥", "Love this! ❤️", "So good! 👏", "Perfect! ✨", 
-        "Incredible! 🙌", "Beautiful! 😍", "Awesome! 🚀", "Nice! 👌",
-        "Great content! 💯", "Inspiring! 🌟", "Well done! 👍", "Fantastic! 🎉"
-      ];
-      
-      const arabicComments = [
-        "رائع! 🔥", "أحب هذا! ❤️", "جميل جداً! 👏", "مثالي! ✨",
-        "لا يصدق! 🙌", "جميل! 😍", "رهيب! 🚀", "حلو! 👌"
-      ];
-      
-      // Seleciona comentário baseado no nome/origem do usuário
-      const isArabicUser = user.full_name && /[\u0600-\u06FF]/.test(user.full_name);
-      const availableComments = isArabicUser ? arabicComments : commentTemplates;
-      const randomComment = availableComments[Math.floor(Math.random() * availableComments.length)];
-      
-      // Calcula tempo realista
-      const hoursAgo = Math.floor(Math.random() * 72) + 1; // Até 3 dias
-      const timestamp = hoursAgo < 24 ? `${hoursAgo}h` : `${Math.floor(hoursAgo / 24)}d`;
-      
-      return {
-        id: user.pk || `real_user_${index}`,
-        username: user.username || `user_${index}`,
-        text: randomComment,
-        timestamp: timestamp,
-        likes: Math.floor(Math.random() * 50) // Likes realistas
-      };
-    });
-    
-    console.log(`✅ Gerados ${comments.length} comentários baseados em usuários REAIS`);
-  } else {
-    // Processa outras estruturas de dados possíveis das APIs do RapidAPI
-    const possibleCommentPaths = [
-      data.data,
-      data.comments,
-      data.edge_media_to_comment?.edges,
-      data.comment_data,
-      data.data?.comments,
-      data.post?.comments,
-      data.media?.comments,
-      data.shortcode_media?.edge_media_to_comment?.edges,
-      data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
-      data.result?.comments,
-      data.comments_data,
-      data.post_comments
-    ];
+  // Verifica diferentes estruturas de dados possíveis das APIs
+  const possibleCommentPaths = [
+    data.data,
+    data.comments,
+    data.edge_media_to_comment?.edges,
+    data.comment_data,
+    data.data?.comments,
+    data.post?.comments,
+    data.media?.comments,
+    data.shortcode_media?.edge_media_to_comment?.edges,
+    data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
+    data.result?.comments,
+    data.comments_data,
+    data.post_comments
+  ];
 
-    for (const commentsData of possibleCommentPaths) {
-      if (Array.isArray(commentsData) && commentsData.length > 0) {
-        console.log(`📝 Encontrados ${commentsData.length} comentários REAIS tradicionais!`);
+  for (const commentsData of possibleCommentPaths) {
+    if (Array.isArray(commentsData) && commentsData.length > 0) {
+      console.log(`📝 Encontrados ${commentsData.length} comentários REAIS!`);
+      
+      comments = commentsData.map((item: any, index: number) => {
+        const commentData = item.node || item;
         
-        comments = commentsData.map((item: any, index: number) => {
-          const commentData = item.node || item;
-          
-          return {
-            id: commentData.id || commentData.pk || `real_${index}`,
-            username: commentData.owner?.username || 
-                     commentData.user?.username || 
-                     commentData.username || 
-                     commentData.from?.username ||
-                     `usuario_real_${index}`,
-            text: commentData.text || 
-                  commentData.comment || 
-                  commentData.caption ||
-                  commentData.message ||
-                  'Comentário real',
-            timestamp: formatTimestamp(commentData.created_at || commentData.timestamp || commentData.taken_at),
-            likes: commentData.edge_liked_by?.count || 
-                   commentData.like_count || 
-                   commentData.likes || 
-                   Math.floor(Math.random() * 100)
-          };
-        });
-        
-        break;
-      }
+        return {
+          id: commentData.id || commentData.pk || `real_${index}`,
+          username: commentData.owner?.username || 
+                   commentData.user?.username || 
+                   commentData.username || 
+                   commentData.from?.username ||
+                   `usuario_real_${index}`,
+          text: commentData.text || 
+                commentData.comment || 
+                commentData.caption ||
+                commentData.message ||
+                'Comentário real',
+          timestamp: formatTimestamp(commentData.created_at || commentData.timestamp || commentData.taken_at),
+          likes: commentData.edge_liked_by?.count || 
+                 commentData.like_count || 
+                 commentData.likes || 
+                 Math.floor(Math.random() * 100)
+        };
+      });
+      
+      break;
     }
   }
 
@@ -285,82 +242,6 @@ const processRealApiResponse = async (data: any, filter?: string, apiName?: stri
   }
 
   return comments;
-};
-
-// Simulação inteligente mais realista
-const generateIntelligentSimulation = (postId: string, postUrl: string, filter?: string): InstagramApiResponse => {
-  console.log('🧠 Gerando simulação INTELIGENTE baseada no post real:', postId);
-  
-  // Comentários mais realistas baseados em posts de investimento/negócios
-  const businessComments = [
-    "Excelente análise! 💼", "Muito esclarecedor 👏", "Salvei para estudar mais 📚",
-    "Obrigado pelo conteúdo de qualidade 🙏", "Sempre aprendendo contigo 📈", 
-    "Conteúdo top demais! 🚀", "Que insight valioso! 💡", "Aplicando já! ✅",
-    "Muito bom, parabéns! 🎯", "Conteúdo de ouro 🥇", "Show de estratégia! 💪",
-    "Salvando aqui 💾", "Compartilhando com a galera 📲", "Verdade pura! ✨",
-    "Tô anotando tudo 📝", "Perfeita explicação 👌", "Muito inspirador! 🌟",
-    "Valeu pelo ensinamento 🎓", "Conhecimento que transforma 🔄", "Top! 🔥"
-  ];
-
-  // Usernames mais realistas do nicho financeiro/investimentos
-  const businessUsernames = [
-    "investidor_br", "empreendedor_digital", "trader_academy", "renda_extra_",
-    "business_mind", "startup_brasil", "financas_smart", "invest_young",
-    "money_mindset", "wealth_builder", "crypto_brasil", "trading_pro",
-    "business_coach", "entrepreneur_", "sucesso_financeiro", "liberdade_fin",
-    "invest_academy", "mercado_acoes", "dividendos_br", "fii_investidor"
-  ];
-
-  let comments: InstagramComment[] = [];
-  const targetComments = 10000; // Gera até 10 mil comentários
-  
-  for (let i = 0; i < targetComments; i++) {
-    const baseUsername = businessUsernames[i % businessUsernames.length];
-    const usernameVariation = i > businessUsernames.length ? 
-      `${baseUsername}${Math.floor(i / businessUsernames.length)}` : baseUsername;
-    
-    const comment = businessComments[i % businessComments.length];
-    
-    // Varia os horários de forma realista
-    const hoursAgo = Math.floor(Math.random() * 168) + 1; // Até 1 semana
-    const timestamp = hoursAgo < 24 ? `${hoursAgo}h` : 
-                     hoursAgo < 168 ? `${Math.floor(hoursAgo / 24)}d` : 
-                     `${Math.floor(hoursAgo / 168)}sem`;
-    
-    comments.push({
-      id: `sim_${postId}_${i}`,
-      username: usernameVariation,
-      text: comment,
-      timestamp: timestamp,
-      likes: Math.floor(Math.random() * 200) // Likes variados
-    });
-  }
-
-  // Aplica filtro se fornecido
-  if (filter && filter.trim()) {
-    const originalCount = comments.length;
-    const filterLower = filter.toLowerCase();
-    
-    comments = comments.filter(comment => 
-      comment.username.toLowerCase().includes(filterLower) ||
-      comment.text.toLowerCase().includes(filterLower)
-    );
-    
-    console.log(`🔍 Filtro aplicado na simulação: ${originalCount} → ${comments.length}`);
-  }
-
-  const message = !isConfigured
-    ? `Simulação baseada no post ${postId} - Configure sua chave RapidAPI para dados reais`
-    : `Simulação baseada no post ${postId} - APIs temporariamente indisponíveis`;
-
-  console.log(`✅ Simulação inteligente gerada: ${comments.length} comentários`);
-
-  return {
-    comments,
-    total: comments.length,
-    status: 'success',
-    message
-  };
 };
 
 // Função para formatar timestamp
