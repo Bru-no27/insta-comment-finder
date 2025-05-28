@@ -41,8 +41,8 @@ const PREMIUM_APIS = [
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable-api.p.rapidapi.com',
     endpoint: (postId: string) => `/media/comments?media_id=${postId}`,
-    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI', // ← SUBSTITUA pela sua chave do RapidAPI
-    active: false, // ← MUDE para true depois de configurar a chave
+    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924', // ✅ SUA CHAVE CONFIGURADA
+    active: true, // ✅ ATIVADA PARA COMENTÁRIOS REAIS
     price: 'Gratuito + planos pagos',
     features: ['500 requests gratuitas/mês', 'Comentários reais', 'Posts/Reels/IGTV', 'API estável']
   },
