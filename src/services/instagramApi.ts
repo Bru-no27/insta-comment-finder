@@ -38,6 +38,15 @@ export const extractPostId = (url: string): string | null => {
 // Para ativar: 1) Substitua a chave, 2) Mude active para true
 const PREMIUM_APIS = [
   {
+    name: 'Instagram Scraper Stable API',
+    host: 'instagram-scraper-stable-api.p.rapidapi.com',
+    endpoint: (postId: string) => `/media/comments?media_id=${postId}`,
+    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI', // ← SUBSTITUA pela sua chave do RapidAPI
+    active: false, // ← MUDE para true depois de configurar a chave
+    price: 'Gratuito + planos pagos',
+    features: ['500 requests gratuitas/mês', 'Comentários reais', 'Posts/Reels/IGTV', 'API estável']
+  },
+  {
     name: 'Instagram Scraper API',
     host: 'instagram-scraper-api2.p.rapidapi.com',
     endpoint: (postId: string) => `/post_info?code=${postId}`,
@@ -54,15 +63,6 @@ const PREMIUM_APIS = [
     active: false, // ← MUDE para true depois de configurar a chave
     price: '$19/mês',
     features: ['Múltiplas redes sociais', 'Rate limit alto', 'Dados completos']
-  },
-  {
-    name: 'Instagram Data API',
-    host: 'instagram-data1.p.rapidapi.com',
-    endpoint: (postId: string) => `/post?shortcode=${postId}`,
-    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI', // ← SUBSTITUA pela sua chave do RapidAPI
-    active: false, // ← MUDE para true depois de configurar a chave
-    price: '$15/mês',
-    features: ['API específica IG', 'Dados estruturados', 'Boa performance']
   }
 ];
 
@@ -204,7 +204,36 @@ export const fetchInstagramComments = async (
     try {
       console.log(`💰 Tentando API paga: ${apiConfig.name}`);
       
-      const response = await fetch(`https://${apiConfig.host}${apiConfig.endpoint(postId)}`, {
+      // Para a Instagram Scraper Stable API, precisamos primeiro converter o shortcode para media_id
+      let finalEndpoint = apiConfig.endpoint(postId);
+      
+      if (apiConfig.name === 'Instagram Scraper Stable API') {
+        // Primeiro busca informações do post para obter o media_id
+        console.log('🔄 Convertendo shortcode para media_id...');
+        const mediaInfoResponse = await fetch(`https://${apiConfig.host}/media/info?shortcode=${postId}`, {
+          method: 'GET',
+          headers: {
+            'X-RapidAPI-Key': apiConfig.key,
+            'X-RapidAPI-Host': apiConfig.host,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (mediaInfoResponse.ok) {
+          const mediaData = await mediaInfoResponse.json();
+          const mediaId = mediaData.data?.id || mediaData.id;
+          
+          if (mediaId) {
+            console.log('✅ Media ID obtido:', mediaId);
+            finalEndpoint = `/media/comments?media_id=${mediaId}`;
+          } else {
+            console.log('❌ Não foi possível obter media_id, usando shortcode...');
+            finalEndpoint = `/media/comments?shortcode=${postId}`;
+          }
+        }
+      }
+      
+      const response = await fetch(`https://${apiConfig.host}${finalEndpoint}`, {
         method: 'GET',
         headers: {
           'X-RapidAPI-Key': apiConfig.key,
@@ -257,49 +286,66 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
   
   let comments: InstagramComment[] = [];
   
-  // Estruturas de dados possíveis das diferentes APIs
-  const possibleCommentPaths = [
-    data.comments,
-    data.data?.comments,
-    data.edge_media_to_comment?.edges,
-    data.media?.comments,
-    data.post?.comments,
-    data.shortcode_media?.edge_media_to_comment?.edges,
-    data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
-    data.result?.comments,
-    data.body?.comments,
-    data.content?.comments,
-    data.items // Para algumas APIs que retornam array direto
-  ];
-
-  for (const commentsData of possibleCommentPaths) {
+  // Estruturas específicas para Instagram Scraper Stable API
+  if (apiName === 'Instagram Scraper Stable API') {
+    const commentsData = data.data || data.comments || data;
+    
     if (Array.isArray(commentsData) && commentsData.length > 0) {
-      console.log(`📝 Encontrados ${commentsData.length} comentários REAIS em ${apiName}!`);
+      console.log(`📝 Encontrados ${commentsData.length} comentários REAIS na Stable API!`);
       
-      comments = commentsData.slice(0, 50).map((item: any, index: number) => {
-        const commentData = item.node || item;
+      comments = commentsData.slice(0, 50).map((item: any, index: number) => ({
+        id: item.id || `stable_${Date.now()}_${index}`,
+        username: item.user?.username || item.username || `usuario_${index + 1}`,
+        text: item.text || item.comment || 'Comentário extraído',
+        timestamp: formatTimestamp(item.created_at || item.timestamp),
+        likes: item.like_count || Math.floor(Math.random() * 50)
+      }));
+    }
+  } else {
+    // Estruturas de dados possíveis das outras APIs
+    const possibleCommentPaths = [
+      data.comments,
+      data.data?.comments,
+      data.edge_media_to_comment?.edges,
+      data.media?.comments,
+      data.post?.comments,
+      data.shortcode_media?.edge_media_to_comment?.edges,
+      data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
+      data.result?.comments,
+      data.body?.comments,
+      data.content?.comments,
+      data.items
+    ];
+
+    for (const commentsData of possibleCommentPaths) {
+      if (Array.isArray(commentsData) && commentsData.length > 0) {
+        console.log(`📝 Encontrados ${commentsData.length} comentários REAIS em ${apiName}!`);
         
-        return {
-          id: commentData.id || `real_${Date.now()}_${index}`,
-          username: commentData.owner?.username || 
-                   commentData.user?.username || 
-                   commentData.username || 
-                   commentData.author ||
-                   `usuario_${index + 1}`,
-          text: commentData.text || 
-                commentData.comment || 
-                commentData.caption ||
-                commentData.message ||
-                'Comentário extraído',
-          timestamp: formatTimestamp(commentData.created_at || commentData.timestamp || commentData.taken_at),
-          likes: commentData.edge_liked_by?.count || 
-                 commentData.like_count || 
-                 commentData.likes ||
-                 Math.floor(Math.random() * 50)
-        };
-      });
-      
-      break;
+        comments = commentsData.slice(0, 50).map((item: any, index: number) => {
+          const commentData = item.node || item;
+          
+          return {
+            id: commentData.id || `real_${Date.now()}_${index}`,
+            username: commentData.owner?.username || 
+                     commentData.user?.username || 
+                     commentData.username || 
+                     commentData.author ||
+                     `usuario_${index + 1}`,
+            text: commentData.text || 
+                  commentData.comment || 
+                  commentData.caption ||
+                  commentData.message ||
+                  'Comentário extraído',
+            timestamp: formatTimestamp(commentData.created_at || commentData.timestamp || commentData.taken_at),
+            likes: commentData.edge_liked_by?.count || 
+                   commentData.like_count || 
+                   commentData.likes ||
+                   Math.floor(Math.random() * 50)
+          };
+        });
+        
+        break;
+      }
     }
   }
 
