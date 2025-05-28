@@ -1,3 +1,4 @@
+
 // Serviço para integração com API do Instagram
 // Sistema híbrido: APIs pagas + fallback inteligente
 
@@ -84,92 +85,6 @@ export const getApiStatus = () => {
   };
 };
 
-// Gerador de comentários realistas baseados no URL
-const generateRealisticComments = (postUrl: string, filter?: string): InstagramComment[] => {
-  const usernames = [
-    'maria_silva23', 'joao_santos', 'ana_costa', 'pedro_oliveira', 'julia_ferreira',
-    'lucas_rodrigues', 'camila_souza', 'rafael_lima', 'beatriz_alves', 'gustavo_pereira',
-    'larissa_martins', 'bruno_carvalho', 'fernanda_ribeiro', 'diego_nascimento', 'amanda_rocha',
-    'thiago_barbosa', 'isabela_dias', 'vinicius_moura', 'leticia_campos', 'mateus_ramos'
-  ];
-
-  const comentarios = [
-    'Que lugar incrível! 😍',
-    'Amei essa foto! ✨',
-    'Muito lindo! 🔥',
-    'Perfeito! 👏',
-    'Que maravilha! ❤️',
-    'Inspirador! 🙌',
-    'Top demais! 💪',
-    'Que sonho! 🌟',
-    'Ficou incrível! 📸',
-    'Adorei o look! 💜',
-    'Que energia boa! ⚡',
-    'Simplesmente perfeito! 🥰',
-    'Que vibe boa! 🌈',
-    'Apaixonada! 💕',
-    'Que cenário lindo! 🏞️',
-    'Você arrasa sempre! 👑',
-    'Que momento especial! ✨',
-    'Linda demais! 🌺',
-    'Que foto perfeita! 📷',
-    'Inspiração total! 🚀'
-  ];
-
-  // Analisa a URL para gerar comentários mais específicos
-  let specificComments = [...comentarios];
-  if (postUrl.includes('reel')) {
-    specificComments = [
-      'Que reel incrível! 🎥',
-      'Amei esse vídeo! ▶️',
-      'Muito criativo! 🎬',
-      'Que edição perfeita! ✂️',
-      'Reel top! 🔥',
-      ...comentarios
-    ];
-  }
-
-  // Gera comentários únicos
-  const comments: InstagramComment[] = [];
-  const usedUsernames = new Set();
-  const shuffledUsernames = [...usernames].sort(() => Math.random() - 0.5);
-  const shuffledComments = [...specificComments].sort(() => Math.random() - 0.5);
-
-  for (let i = 0; i < Math.min(25, shuffledUsernames.length); i++) {
-    const username = shuffledUsernames[i];
-    const comment = shuffledComments[i % shuffledComments.length];
-    
-    if (!usedUsernames.has(username)) {
-      usedUsernames.add(username);
-      
-      const hoursAgo = Math.floor(Math.random() * 168);
-      const timestamp = hoursAgo < 1 ? 'agora' : 
-                       hoursAgo < 24 ? `${hoursAgo}h` : 
-                       `${Math.floor(hoursAgo / 24)}d`;
-
-      comments.push({
-        id: `demo_${Date.now()}_${i}`,
-        username,
-        text: comment,
-        timestamp,
-        likes: Math.floor(Math.random() * 100)
-      });
-    }
-  }
-
-  // Aplica filtro se fornecido
-  if (filter && filter.trim()) {
-    const filterLower = filter.toLowerCase().trim();
-    return comments.filter(comment => {
-      const usernameMatch = comment.username.toLowerCase().includes(filterLower);
-      const textMatch = comment.text.toLowerCase().includes(filterLower);
-      return usernameMatch || textMatch;
-    });
-  }
-
-  return comments;
-};
-
 // Função principal para buscar comentários
 export const fetchInstagramComments = async (
   postUrl: string,
@@ -193,7 +108,7 @@ export const fetchInstagramComments = async (
   const apiStatus = getApiStatus();
   console.log('📊 Status das APIs:', apiStatus);
 
-  // Tenta APIs PAGAS primeiro (se configuradas)
+  // Tenta APIs PAGAS (se configuradas)
   for (const apiConfig of PREMIUM_APIS) {
     if (!apiConfig.active || apiConfig.key === 'COLE_SUA_CHAVE_RAPIDAPI_AQUI') {
       console.log(`⏭️ ${apiConfig.name} não configurada`);
@@ -240,16 +155,14 @@ export const fetchInstagramComments = async (
     }
   }
 
-  // Se chegou até aqui, usar demonstração com aviso de configuração
-  console.log('💡 Usando dados de demonstração - APIs não configuradas');
-  
-  const demoComments = generateRealisticComments(postUrl, filter);
+  // Se chegou até aqui, nenhuma API funcionou
+  console.log('❌ Nenhuma API configurada ou funcionando');
   
   return {
-    comments: demoComments,
-    total: demoComments.length,
-    status: 'success',
-    message: `🎯 ${demoComments.length} comentários de demonstração - Configure uma API real para dados verdadeiros`
+    comments: [],
+    total: 0,
+    status: 'error',
+    message: 'Não foi possível obter comentários reais. Configure uma API válida ou verifique se a publicação existe e tem comentários públicos.'
   };
 };
 
