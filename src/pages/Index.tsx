@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import SearchForm from '@/components/SearchForm';
 import CommentList from '@/components/CommentList';
-import { Instagram, AlertCircle, CheckCircle } from 'lucide-react';
+import { Instagram, AlertCircle, CheckCircle, CreditCard, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchInstagramComments } from '@/services/instagramApi';
 
@@ -22,6 +22,7 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState<'success' | 'error'>('success');
   const [statusMessage, setStatusMessage] = useState('');
+  const [isRealData, setIsRealData] = useState(false);
   const { toast } = useToast();
 
   const handleSearch = async () => {
@@ -42,21 +43,20 @@ const Index = () => {
       console.log('Iniciando busca para URL:', instagramUrl);
       console.log('Filtro aplicado:', searchFilter);
       
-      // Chama a API real do Instagram
       const response = await fetchInstagramComments(instagramUrl, searchFilter);
       
       if (response.status === 'error') {
         setApiStatus('error');
         setStatusMessage(response.message || 'Erro ao buscar comentários');
         setFilteredComments([]);
+        setIsRealData(false);
         
         toast({
           title: "Erro na busca",
-          description: response.message || "Não foi possível buscar os comentários reais",
+          description: response.message || "Não foi possível buscar os comentários",
           variant: "destructive"
         });
       } else {
-        // Sucesso - dados reais obtidos
         const comments: Comment[] = response.comments.map(comment => ({
           id: comment.id,
           username: comment.username,
@@ -67,11 +67,12 @@ const Index = () => {
         
         setFilteredComments(comments);
         setApiStatus('success');
-        setStatusMessage(response.message || 'Comentários reais obtidos com sucesso');
+        setStatusMessage(response.message || 'Comentários obtidos com sucesso');
+        setIsRealData(response.message?.includes('REAIS') || false);
         
         toast({
           title: "Busca concluída!",
-          description: `${comments.length} comentários reais encontrados`,
+          description: `${comments.length} comentários encontrados`,
         });
       }
       
@@ -82,6 +83,7 @@ const Index = () => {
       setApiStatus('error');
       setStatusMessage('Erro interno da aplicação');
       setFilteredComments([]);
+      setIsRealData(false);
       
       toast({
         title: "Erro interno",
@@ -103,8 +105,8 @@ const Index = () => {
               <Instagram className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Busca Comentário Real</h1>
-              <p className="text-gray-600 text-sm">Busque comentários reais em publicações do Instagram</p>
+              <h1 className="text-2xl font-bold text-gray-900">Busca Comentário Instagram</h1>
+              <p className="text-gray-600 text-sm">Sistema híbrido: APIs pagas + dados de demonstração</p>
             </div>
           </div>
         </div>
@@ -117,22 +119,39 @@ const Index = () => {
           <div className={`border rounded-xl p-4 mb-6 ${
             apiStatus === 'error' 
               ? 'bg-red-50 border-red-200' 
-              : 'bg-green-50 border-green-200'
+              : isRealData 
+                ? 'bg-green-50 border-green-200'
+                : 'bg-blue-50 border-blue-200'
           }`}>
             <div className="flex items-start gap-3">
               {apiStatus === 'error' ? (
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-              ) : (
+              ) : isRealData ? (
                 <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <Zap className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               )}
               <div>
                 <h3 className={`text-sm font-medium ${
-                  apiStatus === 'error' ? 'text-red-800' : 'text-green-800'
+                  apiStatus === 'error' 
+                    ? 'text-red-800' 
+                    : isRealData 
+                      ? 'text-green-800'
+                      : 'text-blue-800'
                 }`}>
-                  {apiStatus === 'error' ? 'Erro na API' : 'Dados Reais do Instagram'}
+                  {apiStatus === 'error' 
+                    ? 'Erro na API' 
+                    : isRealData 
+                      ? '✅ Dados Reais do Instagram'
+                      : '🎯 Dados de Demonstração'
+                  }
                 </h3>
                 <p className={`text-sm mt-1 ${
-                  apiStatus === 'error' ? 'text-red-700' : 'text-green-700'
+                  apiStatus === 'error' 
+                    ? 'text-red-700' 
+                    : isRealData 
+                      ? 'text-green-700'
+                      : 'text-blue-700'
                 }`}>
                   {statusMessage}
                 </p>
@@ -158,7 +177,9 @@ const Index = () => {
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              <span className="ml-3 text-gray-600">Buscando comentários reais do Instagram...</span>
+              <span className="ml-3 text-gray-600">
+                Tentando APIs pagas primeiro, depois fallback...
+              </span>
             </div>
           </div>
         )}
@@ -168,9 +189,13 @@ const Index = () => {
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Comentários Reais Encontrados
+                {isRealData ? 'Comentários Reais' : 'Comentários de Demonstração'}
               </h2>
-              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                isRealData 
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-blue-100 text-blue-700'
+              }`}>
                 {filteredComments.length} {filteredComments.length === 1 ? 'comentário' : 'comentários'}
               </span>
             </div>
@@ -182,6 +207,24 @@ const Index = () => {
         {/* Info Section */}
         {!isSearched && !isLoading && (
           <div className="space-y-6">
+            {/* Premium API Info */}
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <CreditCard className="h-6 w-6 text-purple-600" />
+                <h3 className="text-lg font-semibold text-purple-900">💰 Para Comentários REAIS</h3>
+              </div>
+              <div className="space-y-3 text-purple-800">
+                <p>Configure uma API paga no código para acessar comentários reais:</p>
+                <div className="bg-white/50 rounded-lg p-4 text-sm font-mono">
+                  <p>1. Assine uma API no RapidAPI ($10-50/mês)</p>
+                  <p>2. Substitua "SUA_CHAVE_AQUI" pela sua chave</p>
+                  <p>3. Mude "active: false" para "active: true"</p>
+                </div>
+                <p className="text-sm">Enquanto isso, use dados de demonstração realistas abaixo!</p>
+              </div>
+            </div>
+
+            {/* How to use */}
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-3">Como usar:</h3>
               <div className="space-y-2 text-blue-800">
@@ -195,18 +238,19 @@ const Index = () => {
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="font-medium">3.</span>
-                  <span>Clique em "Buscar Comentários" para ver os resultados reais</span>
+                  <span>Clique em "Buscar Comentários" para ver os resultados</span>
                 </p>
               </div>
             </div>
 
+            {/* Demo info */}
             <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-green-900 mb-3">🎯 Sistema Real:</h3>
+              <h3 className="text-lg font-semibold text-green-900 mb-3">🎯 Sistema de Demonstração:</h3>
               <div className="space-y-3 text-green-800">
-                <p>Integrado com APIs reais do Instagram para buscar comentários reais!</p>
+                <p>Funciona perfeitamente com dados realistas!</p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Sem dados fictícios ou simulados</li>
-                  <li>Comentários reais de publicações públicas</li>
+                  <li>Comentários brasileiros autênticos</li>
+                  <li>Usernames e timestamps realistas</li>
                   <li>Filtros funcionais em tempo real</li>
                   <li>Suporte a Posts, Reels e IGTV</li>
                 </ul>
@@ -220,7 +264,7 @@ const Index = () => {
       <footer className="bg-white border-t mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <p className="text-center text-gray-600 text-sm">
-            Busca Comentário Real - Dados reais do Instagram
+            Sistema Híbrido: APIs Pagas + Demonstração Realista
           </p>
         </div>
       </footer>

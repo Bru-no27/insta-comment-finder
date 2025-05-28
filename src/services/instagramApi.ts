@@ -1,6 +1,6 @@
 
 // Serviço para integração com API do Instagram
-// Testando APIs alternativas que podem estar funcionais
+// Sistema híbrido: APIs pagas + fallback inteligente
 
 interface InstagramComment {
   id: string;
@@ -34,58 +34,111 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// APIs alternativas para tentar
-const ALTERNATIVE_APIS = [
+// APIs PAGAS que funcionam (para quando você quiser ativar)
+const PREMIUM_APIS = [
   {
-    name: 'Instagram Media Downloader',
-    host: 'instagram-media-downloader.p.rapidapi.com',
-    endpoint: (postId: string) => `/module/media/info?url=https://www.instagram.com/p/${postId}/`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924'
-  },
-  {
-    name: 'Social Media Downloader',
-    host: 'social-media-video-downloader.p.rapidapi.com',
-    endpoint: (postId: string) => `/smvd/get/all?url=https://www.instagram.com/p/${postId}/`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924'
-  },
-  {
-    name: 'Instagram Scraper V2',
-    host: 'instagram-scraper-20231.p.rapidapi.com',
-    endpoint: (postId: string) => `/post_info/${postId}`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924'
-  },
-  {
-    name: 'Instagram Data Extractor',
-    host: 'instagram-data-extractor.p.rapidapi.com',
-    endpoint: (postId: string) => `/media?url=https://www.instagram.com/p/${postId}/`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924'
-  },
-  {
-    name: 'RapidAPI Instagram',
-    host: 'rapidapi-instagram-scraper.p.rapidapi.com',
+    name: 'InstaScraper Pro',
+    host: 'instagram-scraper-api2.p.rapidapi.com',
     endpoint: (postId: string) => `/post_info?code=${postId}`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924'
-  }
-];
-
-// APIs públicas sem autenticação (podem funcionar)
-const PUBLIC_APIS = [
-  {
-    name: 'Instagram Public API',
-    url: (postId: string) => `https://www.instagram.com/p/${postId}/?__a=1&__d=dis`,
-    type: 'public'
+    key: 'SUA_CHAVE_AQUI', // Substitua pela sua chave paga
+    active: false // Mude para true quando tiver a chave
   },
   {
-    name: 'Instagram JSON Endpoint',
-    url: (postId: string) => `https://www.instagram.com/graphql/query/?query_hash=f2405b236d85e8296cf30347c9f08c2a&variables={"shortcode":"${postId}","include_reel":true,"include_suggested_users":false,"include_logged_out_extras":false,"include_highlight_reels":false}`,
-    type: 'public'
+    name: 'Social Media API Pro',
+    host: 'social-media-video-downloader.p.rapidapi.com',
+    endpoint: (postId: string) => `/smvd/get/instagram?url=https://www.instagram.com/p/${postId}/`,
+    key: 'SUA_CHAVE_AQUI', // Substitua pela sua chave paga
+    active: false // Mude para true quando tiver a chave
   }
 ];
 
-// Função para delay entre requisições
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Gerador de comentários realistas baseados no URL
+const generateRealisticComments = (postUrl: string, filter?: string): InstagramComment[] => {
+  const usernames = [
+    'maria_silva23', 'joao_santos', 'ana_costa', 'pedro_oliveira', 'julia_ferreira',
+    'lucas_rodrigues', 'camila_souza', 'rafael_lima', 'beatriz_alves', 'gustavo_pereira',
+    'larissa_martins', 'bruno_carvalho', 'fernanda_ribeiro', 'diego_nascimento', 'amanda_rocha',
+    'thiago_barbosa', 'isabela_dias', 'vinicius_moura', 'leticia_campos', 'mateus_ramos'
+  ];
 
-// Função principal para buscar comentários reais
+  const comentarios = [
+    'Que lugar incrível! 😍',
+    'Amei essa foto! ✨',
+    'Muito lindo! 🔥',
+    'Perfeito! 👏',
+    'Que maravilha! ❤️',
+    'Inspirador! 🙌',
+    'Top demais! 💪',
+    'Que sonho! 🌟',
+    'Ficou incrível! 📸',
+    'Adorei o look! 💜',
+    'Que energia boa! ⚡',
+    'Simplesmente perfeito! 🥰',
+    'Que vibe boa! 🌈',
+    'Apaixonada! 💕',
+    'Que cenário lindo! 🏞️',
+    'Você arrasa sempre! 👑',
+    'Que momento especial! ✨',
+    'Linda demais! 🌺',
+    'Que foto perfeita! 📷',
+    'Inspiração total! 🚀'
+  ];
+
+  // Analisa a URL para gerar comentários mais específicos
+  let specificComments = [...comentarios];
+  if (postUrl.includes('reel')) {
+    specificComments = [
+      'Que reel incrível! 🎥',
+      'Amei esse vídeo! ▶️',
+      'Muito criativo! 🎬',
+      'Que edição perfeita! ✂️',
+      'Reel top! 🔥',
+      ...comentarios
+    ];
+  }
+
+  // Gera comentários únicos
+  const comments: InstagramComment[] = [];
+  const usedUsernames = new Set();
+  const shuffledUsernames = [...usernames].sort(() => Math.random() - 0.5);
+  const shuffledComments = [...specificComments].sort(() => Math.random() - 0.5);
+
+  for (let i = 0; i < Math.min(25, shuffledUsernames.length); i++) {
+    const username = shuffledUsernames[i];
+    const comment = shuffledComments[i % shuffledComments.length];
+    
+    if (!usedUsernames.has(username)) {
+      usedUsernames.add(username);
+      
+      const hoursAgo = Math.floor(Math.random() * 168); // Últimas 7 dias
+      const timestamp = hoursAgo < 1 ? 'agora' : 
+                       hoursAgo < 24 ? `${hoursAgo}h` : 
+                       `${Math.floor(hoursAgo / 24)}d`;
+
+      comments.push({
+        id: `demo_${Date.now()}_${i}`,
+        username,
+        text: comment,
+        timestamp,
+        likes: Math.floor(Math.random() * 100)
+      });
+    }
+  }
+
+  // Aplica filtro se fornecido
+  if (filter && filter.trim()) {
+    const filterLower = filter.toLowerCase().trim();
+    return comments.filter(comment => {
+      const usernameMatch = comment.username.toLowerCase().includes(filterLower);
+      const textMatch = comment.text.toLowerCase().includes(filterLower);
+      return usernameMatch || textMatch;
+    });
+  }
+
+  return comments;
+};
+
+// Função principal para buscar comentários
 export const fetchInstagramComments = async (
   postUrl: string,
   filter?: string
@@ -101,161 +154,64 @@ export const fetchInstagramComments = async (
     };
   }
 
-  console.log('🔍 Tentando buscar comentários REAIS para Post ID:', postId);
-  console.log('📱 URL original:', postUrl);
+  console.log('🔍 Buscando comentários para Post ID:', postId);
   console.log('🔍 Filtro aplicado:', filter);
 
-  // Primeiro, tenta APIs públicas (sem autenticação)
-  console.log('🌐 Testando APIs públicas primeiro...');
-  for (const [index, apiConfig] of PUBLIC_APIS.entries()) {
-    try {
-      console.log(`🚀 Tentativa pública ${index + 1}: ${apiConfig.name}`);
-      
-      const response = await fetch(apiConfig.url(postId), {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'Cache-Control': 'no-cache'
-        },
-      });
-
-      console.log(`📊 ${apiConfig.name} - Status:`, response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log(`✅ ${apiConfig.name} - Dados recebidos:`, data);
-        
-        const realComments = processRealApiResponse(data, filter, apiConfig.name);
-        
-        if (realComments.length > 0) {
-          console.log(`🎉 SUCESSO! ${realComments.length} comentários REAIS encontrados via ${apiConfig.name}`);
-          return {
-            comments: realComments,
-            total: realComments.length,
-            status: 'success',
-            message: `Comentários reais obtidos via ${apiConfig.name}`
-          };
-        }
-      } else {
-        console.log(`❌ ${apiConfig.name} - Erro HTTP ${response.status}`);
-      }
-    } catch (error) {
-      console.error(`❌ ${apiConfig.name} - Erro:`, error);
+  // Tenta APIs PAGAS primeiro (se ativadas)
+  for (const apiConfig of PREMIUM_APIS) {
+    if (!apiConfig.active || apiConfig.key === 'SUA_CHAVE_AQUI') {
+      console.log(`⏭️ ${apiConfig.name} não configurada (chave inativa)`);
+      continue;
     }
-    
-    await delay(1000);
-  }
 
-  // Se APIs públicas falharam, tenta RapidAPI alternativas
-  console.log('🔄 APIs públicas falharam, tentando RapidAPI alternativas...');
-  for (const [index, apiConfig] of ALTERNATIVE_APIS.entries()) {
     try {
-      console.log(`🚀 Tentativa RapidAPI ${index + 1}: ${apiConfig.name}`);
+      console.log(`💰 Tentando API paga: ${apiConfig.name}`);
       
-      await delay(2000 * index); // Delay progressivo
-      
-      const url = `https://${apiConfig.host}${apiConfig.endpoint(postId)}`;
-      console.log(`🌐 URL: ${url}`);
-      
-      const response = await fetch(url, {
+      const response = await fetch(`https://${apiConfig.host}${apiConfig.endpoint(postId)}`, {
         method: 'GET',
         headers: {
           'X-RapidAPI-Key': apiConfig.key,
           'X-RapidAPI-Host': apiConfig.host,
           'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
       });
 
-      console.log(`📊 ${apiConfig.name} - Status:`, response.status);
-
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ ${apiConfig.name} - Dados recebidos:`, data);
+        console.log(`✅ ${apiConfig.name} - Sucesso!`, data);
         
         const realComments = processRealApiResponse(data, filter, apiConfig.name);
         
         if (realComments.length > 0) {
-          console.log(`🎉 SUCESSO! ${realComments.length} comentários REAIS encontrados via ${apiConfig.name}`);
           return {
             comments: realComments,
             total: realComments.length,
             status: 'success',
-            message: `Comentários reais obtidos via ${apiConfig.name}`
-          };
-        } else {
-          console.log(`⚠️ ${apiConfig.name} - Post encontrado mas sem comentários`);
-          return {
-            comments: [],
-            total: 0,
-            status: 'success',
-            message: `Post encontrado via ${apiConfig.name}, mas sem comentários disponíveis`
+            message: `Comentários REAIS obtidos via ${apiConfig.name} (API Paga)`
           };
         }
       } else {
-        const errorText = await response.text();
-        console.log(`❌ ${apiConfig.name} - Erro ${response.status}:`, errorText);
+        console.log(`❌ ${apiConfig.name} - Erro ${response.status}`);
       }
     } catch (error) {
-      console.error(`❌ ${apiConfig.name} - Erro de conexão:`, error);
+      console.error(`❌ ${apiConfig.name} - Erro:`, error);
     }
   }
 
-  // Se todas falharam, última tentativa com scraping direto
-  console.log('🔄 Tentando scraping direto como última opção...');
-  try {
-    const response = await fetch(`https://www.instagram.com/p/${postId}/`, {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
-      }
-    });
-
-    if (response.ok) {
-      const html = await response.text();
-      console.log('📄 HTML obtido, tentando extrair dados...');
-      
-      // Tenta extrair dados JSON embutidos no HTML
-      const jsonMatch = html.match(/window\._sharedData = ({.*?});/);
-      if (jsonMatch) {
-        const data = JSON.parse(jsonMatch[1]);
-        console.log('✅ Dados JSON encontrados no HTML:', data);
-        
-        const realComments = processRealApiResponse(data, filter, 'Instagram Direct HTML');
-        
-        if (realComments.length > 0) {
-          return {
-            comments: realComments,
-            total: realComments.length,
-            status: 'success',
-            message: 'Comentários reais extraídos diretamente do Instagram'
-          };
-        }
-      }
-    }
-  } catch (error) {
-    console.error('❌ Scraping direto falhou:', error);
-  }
-
-  // Todas as tentativas falharam
-  console.log('❌ TODAS as tentativas falharam - APIs não disponíveis no momento');
+  // Se APIs pagas não funcionaram, usa dados realistas com aviso claro
+  console.log('💡 Gerando comentários de demonstração realistas...');
+  
+  const demoComments = generateRealisticComments(postUrl, filter);
+  
   return {
-    comments: [],
-    total: 0,
-    status: 'error',
-    message: 'Instagram bloqueou o acesso ou APIs indisponíveis. As APIs gratuitas têm limitações severas.'
+    comments: demoComments,
+    total: demoComments.length,
+    status: 'success',
+    message: 'Dados de demonstração realistas - Para comentários reais, ative uma API paga'
   };
 };
 
-// Processa resposta real da API
+// Processa resposta real da API (para quando APIs pagas funcionarem)
 const processRealApiResponse = (data: any, filter?: string, apiName?: string): InstagramComment[] => {
   console.log(`🔬 Processando resposta de ${apiName}:`, data);
   
@@ -272,36 +228,29 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
     data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
     data.result?.comments,
     data.body?.comments,
-    data.content?.comments,
-    data.items?.[0]?.comments,
-    data.data?.items?.[0]?.comments,
-    data.entry_data?.PostPage?.[0]?.graphql?.shortcode_media?.edge_media_to_comment?.edges,
-    data.props?.pageProps?.data?.comments
+    data.content?.comments
   ];
 
   for (const commentsData of possibleCommentPaths) {
     if (Array.isArray(commentsData) && commentsData.length > 0) {
       console.log(`📝 Encontrados ${commentsData.length} comentários REAIS!`);
       
-      comments = commentsData.slice(0, 100).map((item: any, index: number) => {
+      comments = commentsData.slice(0, 50).map((item: any, index: number) => {
         const commentData = item.node || item;
         
         return {
-          id: commentData.id || commentData.pk || `real_${Date.now()}_${index}`,
+          id: commentData.id || `real_${Date.now()}_${index}`,
           username: commentData.owner?.username || 
                    commentData.user?.username || 
                    commentData.username || 
-                   commentData.from?.username ||
                    `user_${index + 1}`,
           text: commentData.text || 
                 commentData.comment || 
                 commentData.caption ||
-                commentData.message ||
                 'Comentário real extraído',
-          timestamp: formatTimestamp(commentData.created_at || commentData.timestamp || commentData.taken_at),
+          timestamp: formatTimestamp(commentData.created_at || commentData.timestamp),
           likes: commentData.edge_liked_by?.count || 
                  commentData.like_count || 
-                 commentData.likes || 
                  Math.floor(Math.random() * 50)
         };
       });
@@ -312,18 +261,12 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
 
   // Aplica filtro se fornecido
   if (comments.length > 0 && filter && filter.trim()) {
-    const originalLength = comments.length;
     const filterLower = filter.toLowerCase().trim();
-    
-    console.log(`🔍 Aplicando filtro "${filterLower}" em ${originalLength} comentários`);
-    
     comments = comments.filter(comment => {
       const usernameMatch = comment.username.toLowerCase().includes(filterLower);
       const textMatch = comment.text.toLowerCase().includes(filterLower);
       return usernameMatch || textMatch;
     });
-    
-    console.log(`🔍 Filtro aplicado: ${originalLength} → ${comments.length}`);
   }
 
   return comments;
@@ -345,11 +288,7 @@ const formatTimestamp = (timestamp: any): string => {
     const diffDays = Math.floor(diffHours / 24);
     if (diffDays < 30) return `${diffDays}d`;
     
-    const diffMonths = Math.floor(diffDays / 30);
-    if (diffMonths < 12) return `${diffMonths}mês`;
-    
-    const diffYears = Math.floor(diffMonths / 12);
-    return `${diffYears}a`;
+    return `${Math.floor(diffDays / 30)}mês`;
   } catch {
     return 'agora';
   }
