@@ -34,23 +34,56 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// APIs PAGAS que funcionam (para quando você quiser ativar)
+// CONFIGURAÇÃO DAS APIs REAIS
+// Para ativar: 1) Substitua a chave, 2) Mude active para true
 const PREMIUM_APIS = [
   {
-    name: 'InstaScraper Pro',
+    name: 'Instagram Scraper API',
     host: 'instagram-scraper-api2.p.rapidapi.com',
     endpoint: (postId: string) => `/post_info?code=${postId}`,
-    key: 'SUA_CHAVE_AQUI', // Substitua pela sua chave paga
-    active: false // Mude para true quando tiver a chave
+    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI', // ← SUBSTITUA pela sua chave do RapidAPI
+    active: false, // ← MUDE para true depois de configurar a chave
+    price: '$29/mês',
+    features: ['Comentários reais', 'Posts/Reels/IGTV', '1000 requests/dia']
   },
   {
-    name: 'Social Media API Pro',
+    name: 'Social Media Scraper Pro',
     host: 'social-media-video-downloader.p.rapidapi.com',
     endpoint: (postId: string) => `/smvd/get/instagram?url=https://www.instagram.com/p/${postId}/`,
-    key: 'SUA_CHAVE_AQUI', // Substitua pela sua chave paga
-    active: false // Mude para true quando tiver a chave
+    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI', // ← SUBSTITUA pela sua chave do RapidAPI
+    active: false, // ← MUDE para true depois de configurar a chave
+    price: '$19/mês',
+    features: ['Múltiplas redes sociais', 'Rate limit alto', 'Dados completos']
+  },
+  {
+    name: 'Instagram Data API',
+    host: 'instagram-data1.p.rapidapi.com',
+    endpoint: (postId: string) => `/post?shortcode=${postId}`,
+    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI', // ← SUBSTITUA pela sua chave do RapidAPI
+    active: false, // ← MUDE para true depois de configurar a chave
+    price: '$15/mês',
+    features: ['API específica IG', 'Dados estruturados', 'Boa performance']
   }
 ];
+
+// Status da configuração das APIs
+export const getApiStatus = () => {
+  const configuredApis = PREMIUM_APIS.filter(api => 
+    api.key !== 'COLE_SUA_CHAVE_RAPIDAPI_AQUI' && api.active
+  );
+  
+  return {
+    totalApis: PREMIUM_APIS.length,
+    configuredApis: configuredApis.length,
+    isConfigured: configuredApis.length > 0,
+    availableApis: PREMIUM_APIS.map(api => ({
+      name: api.name,
+      price: api.price,
+      features: api.features,
+      isConfigured: api.key !== 'COLE_SUA_CHAVE_RAPIDAPI_AQUI' && api.active
+    }))
+  };
+};
 
 // Gerador de comentários realistas baseados no URL
 const generateRealisticComments = (postUrl: string, filter?: string): InstagramComment[] => {
@@ -110,7 +143,7 @@ const generateRealisticComments = (postUrl: string, filter?: string): InstagramC
     if (!usedUsernames.has(username)) {
       usedUsernames.add(username);
       
-      const hoursAgo = Math.floor(Math.random() * 168); // Últimas 7 dias
+      const hoursAgo = Math.floor(Math.random() * 168);
       const timestamp = hoursAgo < 1 ? 'agora' : 
                        hoursAgo < 24 ? `${hoursAgo}h` : 
                        `${Math.floor(hoursAgo / 24)}d`;
@@ -157,10 +190,14 @@ export const fetchInstagramComments = async (
   console.log('🔍 Buscando comentários para Post ID:', postId);
   console.log('🔍 Filtro aplicado:', filter);
 
-  // Tenta APIs PAGAS primeiro (se ativadas)
+  // Verifica status das APIs
+  const apiStatus = getApiStatus();
+  console.log('📊 Status das APIs:', apiStatus);
+
+  // Tenta APIs PAGAS primeiro (se configuradas)
   for (const apiConfig of PREMIUM_APIS) {
-    if (!apiConfig.active || apiConfig.key === 'SUA_CHAVE_AQUI') {
-      console.log(`⏭️ ${apiConfig.name} não configurada (chave inativa)`);
+    if (!apiConfig.active || apiConfig.key === 'COLE_SUA_CHAVE_RAPIDAPI_AQUI') {
+      console.log(`⏭️ ${apiConfig.name} não configurada`);
       continue;
     }
 
@@ -176,9 +213,11 @@ export const fetchInstagramComments = async (
         },
       });
 
+      console.log(`📡 ${apiConfig.name} - Status: ${response.status}`);
+
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ ${apiConfig.name} - Sucesso!`, data);
+        console.log(`✅ ${apiConfig.name} - Dados recebidos:`, data);
         
         const realComments = processRealApiResponse(data, filter, apiConfig.name);
         
@@ -187,19 +226,20 @@ export const fetchInstagramComments = async (
             comments: realComments,
             total: realComments.length,
             status: 'success',
-            message: `Comentários REAIS obtidos via ${apiConfig.name} (API Paga)`
+            message: `✅ ${realComments.length} comentários REAIS obtidos via ${apiConfig.name}`
           };
         }
       } else {
-        console.log(`❌ ${apiConfig.name} - Erro ${response.status}`);
+        const errorText = await response.text();
+        console.error(`❌ ${apiConfig.name} - Erro ${response.status}:`, errorText);
       }
     } catch (error) {
-      console.error(`❌ ${apiConfig.name} - Erro:`, error);
+      console.error(`❌ ${apiConfig.name} - Erro de conexão:`, error);
     }
   }
 
-  // Se APIs pagas não funcionaram, usa dados realistas com aviso claro
-  console.log('💡 Gerando comentários de demonstração realistas...');
+  // Se chegou até aqui, usar demonstração com aviso de configuração
+  console.log('💡 Usando dados de demonstração - APIs não configuradas');
   
   const demoComments = generateRealisticComments(postUrl, filter);
   
@@ -207,17 +247,17 @@ export const fetchInstagramComments = async (
     comments: demoComments,
     total: demoComments.length,
     status: 'success',
-    message: 'Dados de demonstração realistas - Para comentários reais, ative uma API paga'
+    message: `🎯 ${demoComments.length} comentários de demonstração - Configure uma API real para dados verdadeiros`
   };
 };
 
-// Processa resposta real da API (para quando APIs pagas funcionarem)
+// Processa resposta real da API
 const processRealApiResponse = (data: any, filter?: string, apiName?: string): InstagramComment[] => {
   console.log(`🔬 Processando resposta de ${apiName}:`, data);
   
   let comments: InstagramComment[] = [];
   
-  // Verifica diferentes estruturas de dados possíveis
+  // Estruturas de dados possíveis das diferentes APIs
   const possibleCommentPaths = [
     data.comments,
     data.data?.comments,
@@ -228,12 +268,13 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
     data.graphql?.shortcode_media?.edge_media_to_comment?.edges,
     data.result?.comments,
     data.body?.comments,
-    data.content?.comments
+    data.content?.comments,
+    data.items // Para algumas APIs que retornam array direto
   ];
 
   for (const commentsData of possibleCommentPaths) {
     if (Array.isArray(commentsData) && commentsData.length > 0) {
-      console.log(`📝 Encontrados ${commentsData.length} comentários REAIS!`);
+      console.log(`📝 Encontrados ${commentsData.length} comentários REAIS em ${apiName}!`);
       
       comments = commentsData.slice(0, 50).map((item: any, index: number) => {
         const commentData = item.node || item;
@@ -243,14 +284,17 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
           username: commentData.owner?.username || 
                    commentData.user?.username || 
                    commentData.username || 
-                   `user_${index + 1}`,
+                   commentData.author ||
+                   `usuario_${index + 1}`,
           text: commentData.text || 
                 commentData.comment || 
                 commentData.caption ||
-                'Comentário real extraído',
-          timestamp: formatTimestamp(commentData.created_at || commentData.timestamp),
+                commentData.message ||
+                'Comentário extraído',
+          timestamp: formatTimestamp(commentData.created_at || commentData.timestamp || commentData.taken_at),
           likes: commentData.edge_liked_by?.count || 
                  commentData.like_count || 
+                 commentData.likes ||
                  Math.floor(Math.random() * 50)
         };
       });

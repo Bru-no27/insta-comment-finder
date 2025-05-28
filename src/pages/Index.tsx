@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import SearchForm from '@/components/SearchForm';
 import CommentList from '@/components/CommentList';
 import AdvancedResearch from '@/components/AdvancedResearch';
-import { Instagram, AlertCircle, CheckCircle, CreditCard, Zap, Microscope } from 'lucide-react';
+import ApiConfiguration from '@/components/ApiConfiguration';
+import { Instagram, AlertCircle, CheckCircle, CreditCard, Zap, Microscope, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { fetchInstagramComments } from '@/services/instagramApi';
+import { fetchInstagramComments, getApiStatus } from '@/services/instagramApi';
 
 export interface Comment {
   id: string;
@@ -24,7 +25,10 @@ const Index = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [isRealData, setIsRealData] = useState(false);
   const [showAdvancedResearch, setShowAdvancedResearch] = useState(false);
+  const [showApiConfig, setShowApiConfig] = useState(false);
   const { toast } = useToast();
+
+  const apiConfigStatus = getApiStatus();
 
   const handleSearch = async () => {
     if (!instagramUrl.trim()) {
@@ -96,6 +100,11 @@ const Index = () => {
     }
   };
 
+  const resetToNormalMode = () => {
+    setShowAdvancedResearch(false);
+    setShowApiConfig(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
@@ -108,29 +117,80 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Busca Comentário Instagram</h1>
-                <p className="text-gray-600 text-sm">Sistema híbrido: APIs pagas + pesquisa avançada</p>
+                <p className="text-gray-600 text-sm">
+                  {apiConfigStatus.isConfigured 
+                    ? `✅ ${apiConfigStatus.configuredApis} API(s) configurada(s) - Dados reais disponíveis`
+                    : '⚙️ Configure uma API para comentários reais'
+                  }
+                </p>
               </div>
             </div>
             
-            {/* Toggle Advanced Research */}
-            <button
-              onClick={() => setShowAdvancedResearch(!showAdvancedResearch)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                showAdvancedResearch 
-                  ? 'bg-purple-100 border-purple-300 text-purple-700' 
-                  : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <Microscope className="h-4 w-4" />
-              {showAdvancedResearch ? 'Pesquisa Normal' : 'Pesquisa Avançada'}
-            </button>
+            {/* Navigation Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowApiConfig(!showApiConfig);
+                  setShowAdvancedResearch(false);
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  showApiConfig 
+                    ? 'bg-blue-100 border-blue-300 text-blue-700' 
+                    : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Settings className="h-4 w-4" />
+                Configurar APIs
+              </button>
+              
+              <button
+                onClick={() => {
+                  setShowAdvancedResearch(!showAdvancedResearch);
+                  setShowApiConfig(false);
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  showAdvancedResearch 
+                    ? 'bg-purple-100 border-purple-300 text-purple-700' 
+                    : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Microscope className="h-4 w-4" />
+                Pesquisa Avançada
+              </button>
+              
+              {(showApiConfig || showAdvancedResearch) && (
+                <button
+                  onClick={resetToNormalMode}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 border-green-300 text-green-700 hover:bg-green-200 transition-colors"
+                >
+                  <Instagram className="h-4 w-4" />
+                  Busca Normal
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {showAdvancedResearch ? (
+        {showApiConfig ? (
+          /* API Configuration Mode */
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <Settings className="h-6 w-6 text-blue-600" />
+                <h2 className="text-xl font-bold text-blue-900">⚙️ Configuração de APIs Reais</h2>
+              </div>
+              <p className="text-blue-800">
+                Configure uma API paga para acessar comentários verdadeiros do Instagram. 
+                <strong> Dados reais em tempo real!</strong>
+              </p>
+            </div>
+            
+            <ApiConfiguration />
+          </div>
+        ) : showAdvancedResearch ? (
           /* Advanced Research Mode */
           <div className="space-y-6">
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
@@ -213,7 +273,10 @@ const Index = () => {
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                   <span className="ml-3 text-gray-600">
-                    Tentando APIs pagas primeiro, depois fallback...
+                    {apiConfigStatus.isConfigured 
+                      ? 'Buscando comentários reais via API...'
+                      : 'Gerando dados de demonstração...'
+                    }
                   </span>
                 </div>
               </div>
@@ -241,7 +304,32 @@ const Index = () => {
 
             {/* Info Section */}
             {!isSearched && !isLoading && (
+              // ... keep existing code (info sections)
               <div className="space-y-6">
+                {/* Quick API Setup */}
+                {!apiConfigStatus.isConfigured && (
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <CreditCard className="h-6 w-6 text-orange-600" />
+                      <h3 className="text-lg font-semibold text-orange-900">🚀 Configure uma API Real Agora!</h3>
+                    </div>
+                    <div className="space-y-3 text-orange-800">
+                      <p>Acesse comentários verdadeiros do Instagram em segundos:</p>
+                      <div className="bg-white/50 rounded-lg p-4 text-sm">
+                        <p>✅ APIs já configuradas no código</p>
+                        <p>✅ Só precisa da sua chave do RapidAPI</p>
+                        <p>✅ Funciona imediatamente</p>
+                      </div>
+                      <button
+                        onClick={() => setShowApiConfig(true)}
+                        className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                      >
+                        Configurar API Real
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Research Notice */}
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
                   <div className="flex items-center gap-3 mb-4">
@@ -262,23 +350,6 @@ const Index = () => {
                     >
                       Explorar Técnicas Avançadas
                     </button>
-                  </div>
-                </div>
-
-                {/* Premium API Info */}
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-                  <div className="flex items-center gap-3 mb-4">
-                    <CreditCard className="h-6 w-6 text-purple-600" />
-                    <h3 className="text-lg font-semibold text-purple-900">💰 Para Comentários REAIS</h3>
-                  </div>
-                  <div className="space-y-3 text-purple-800">
-                    <p>Configure uma API paga no código para acessar comentários reais:</p>
-                    <div className="bg-white/50 rounded-lg p-4 text-sm font-mono">
-                      <p>1. Assine uma API no RapidAPI ($10-50/mês)</p>
-                      <p>2. Substitua "SUA_CHAVE_AQUI" pela sua chave</p>
-                      <p>3. Mude "active: false" para "active: true"</p>
-                    </div>
-                    <p className="text-sm">Enquanto isso, use dados de demonstração realistas abaixo!</p>
                   </div>
                 </div>
 
@@ -324,7 +395,7 @@ const Index = () => {
       <footer className="bg-white border-t mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <p className="text-center text-gray-600 text-sm">
-            Sistema Híbrido: APIs Pagas + Demonstração Realista + Pesquisa Avançada
+            Sistema Híbrido: APIs Reais + Demonstração + Pesquisa Avançada
           </p>
         </div>
       </footer>
