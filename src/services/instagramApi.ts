@@ -1,17 +1,19 @@
 
 // Serviço para integração com API do Instagram
-// Sistema híbrido: APIs pagas + fallback inteligente
+// Sistema híbrido: APIs pagas + fallback inteligente + Técnicas da Simpliers
 
 import { PREMIUM_APIS } from './instagram/config';
+import { ADVANCED_APIS } from './instagram/advancedConfig';
 import { extractPostId, getApiStatus } from './instagram/utils';
 import { processRealApiResponse } from './instagram/processor';
+import { SimpliersInspiredScraper } from './instagram/simpliersTechniques';
 import type { InstagramApiResponse } from './instagram/types';
 
 // Re-export commonly used functions and types for backward compatibility
 export { extractPostId, getApiStatus };
 export type { InstagramComment, InstagramApiResponse, ApiStatus } from './instagram/types';
 
-// Função principal para buscar comentários
+// Função principal para buscar comentários (com técnicas da Simpliers)
 export const fetchInstagramComments = async (
   postUrl: string,
   filter?: string
@@ -27,7 +29,7 @@ export const fetchInstagramComments = async (
     };
   }
 
-  console.log('🔍 Buscando comentários REAIS para Post ID:', postId);
+  console.log('🔍 Buscando comentários REAIS (técnicas da Simpliers) para Post ID:', postId);
   console.log('🔍 Filtro aplicado:', filter);
 
   // Verifica status das APIs
@@ -43,24 +45,48 @@ export const fetchInstagramComments = async (
       status: 'error',
       message: `❌ Chave do RapidAPI não configurada. 
       
-      Para usar comentários reais:
+      🎯 Para usar as mesmas técnicas de sites como Simpliers:
       1. 🔑 Configure a variável de ambiente VITE_RAPIDAPI_KEY
       2. 📝 Adicione sua chave do RapidAPI no arquivo .env
       3. 🔄 Reinicie o servidor de desenvolvimento
+      4. 🚀 Acesse APIs profissionais como sites de sorteio usam
       
       👉 Acesse rapidapi.com para obter sua chave gratuita!`
     };
   }
 
-  // Tenta APIs REAIS (verificadas e funcionais)
-  for (const apiConfig of PREMIUM_APIS) {
+  // 🚀 NOVA ABORDAGEM: Técnicas avançadas baseadas na Simpliers
+  try {
+    console.log('🎯 Tentando técnicas profissionais (baseadas na Simpliers)...');
+    
+    const advancedResult = await SimpliersInspiredScraper.fetchWithAdvancedTechniques(postId, filter);
+    
+    if (advancedResult.comments.length > 0) {
+      return {
+        comments: advancedResult.comments,
+        total: advancedResult.comments.length,
+        status: 'success',
+        message: `🚀 SUCESSO! ${advancedResult.comments.length} comentários obtidos usando técnicas profissionais (baseadas em sites como Simpliers)`
+      };
+    }
+  } catch (error) {
+    console.error('❌ Erro nas técnicas avançadas:', error);
+  }
+
+  // Fallback para APIs básicas (sistema atual)
+  console.log('📡 Tentando APIs básicas como fallback...');
+  
+  // Combina APIs básicas e avançadas
+  const allApis = [...ADVANCED_APIS, ...PREMIUM_APIS];
+  
+  for (const apiConfig of allApis) {
     if (!apiConfig.active || !rapidApiKey) {
       console.log(`⏭️ ${apiConfig.name} não configurada`);
       continue;
     }
 
     try {
-      console.log(`💰 Tentando API REAL: ${apiConfig.name}`);
+      console.log(`💰 Tentando API: ${apiConfig.name}`);
       
       const finalEndpoint = apiConfig.endpoint(postId);
       const fullUrl = `https://${apiConfig.host}${finalEndpoint}`;
@@ -77,11 +103,10 @@ export const fetchInstagramComments = async (
       });
 
       console.log(`📡 ${apiConfig.name} - Status: ${response.status}`);
-      console.log(`📡 ${apiConfig.name} - Headers:`, response.headers);
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ ${apiConfig.name} - Dados REAIS recebidos:`, data);
+        console.log(`✅ ${apiConfig.name} - Dados recebidos:`, data);
         
         const realComments = processRealApiResponse(data, filter, apiConfig.name);
         
@@ -90,35 +115,29 @@ export const fetchInstagramComments = async (
             comments: realComments,
             total: realComments.length,
             status: 'success',
-            message: `✅ ${realComments.length} comentários REAIS obtidos via ${apiConfig.name} 🎉`
+            message: `✅ ${realComments.length} comentários REAIS obtidos via ${apiConfig.name}`
           };
         } else {
           console.log(`⚠️ ${apiConfig.name} - Post encontrado mas sem comentários ou comentários privados`);
           
-          // Se encontrou o post mas sem comentários, retorna mensagem específica
           if (data.media || data.post || data.data) {
             return {
               comments: [],
               total: 0,
               status: 'success',
-              message: `📱 Post encontrado via ${apiConfig.name}, mas não há comentários públicos ou comentários estão desabilitados`
+              message: `📱 Post encontrado via ${apiConfig.name}, mas não há comentários públicos`
             };
           }
         }
       } else {
         const errorText = await response.text();
         console.error(`❌ ${apiConfig.name} - Erro ${response.status}:`, errorText);
-        
-        // Se é erro 403, explica sobre subscrição
-        if (response.status === 403) {
-          console.log(`🔐 ${apiConfig.name} - Necessário se inscrever na API`);
-        }
       }
     } catch (error) {
       console.error(`❌ ${apiConfig.name} - Erro de conexão:`, error);
     }
 
-    // Aguarda 1.5 segundos entre tentativas para evitar rate limiting
+    // Delay entre tentativas
     await new Promise(resolve => setTimeout(resolve, 1500));
   }
 
@@ -127,13 +146,13 @@ export const fetchInstagramComments = async (
     comments: [],
     total: 0,
     status: 'error',
-    message: `❌ Não foi possível obter comentários reais. Possíveis causas:
+    message: `❌ Não foi possível obter comentários reais usando técnicas profissionais.
     
-    1. 🔐 Você precisa se INSCREVER nas APIs do RapidAPI (muitas têm plano gratuito!)
-    2. 🔒 A publicação pode ter comentários desabilitados
-    3. 🔒 A publicação pode ser privada
-    4. 🚫 A publicação pode não existir
+    🎯 Para funcionar como sites de sorteio (Simpliers):
+    1. 🔐 Você precisa se INSCREVER nas APIs profissionais do RapidAPI
+    2. 💰 Muitas têm plano gratuito para começar
+    3. 🚀 APIs empresariais têm taxa de sucesso muito maior
     
-    👉 Acesse rapidapi.com e se inscreva em uma das APIs listadas para comentários reais!`
+    👉 Sites como Simpliers usam APIs pagas para garantir acesso aos dados!`
   };
 };
