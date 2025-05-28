@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import SearchForm from '@/components/SearchForm';
 import CommentList from '@/components/CommentList';
-import { Instagram, AlertCircle } from 'lucide-react';
+import { Instagram, AlertCircle, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchInstagramComments } from '@/services/instagramApi';
 
@@ -21,6 +21,7 @@ const Index = () => {
   const [isSearched, setIsSearched] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState<'success' | 'error'>('success');
+  const [statusMessage, setStatusMessage] = useState('');
   const { toast } = useToast();
 
   const handleSearch = async () => {
@@ -35,6 +36,7 @@ const Index = () => {
 
     setIsLoading(true);
     setApiStatus('success');
+    setStatusMessage('');
     
     try {
       console.log('Iniciando busca para URL:', instagramUrl);
@@ -45,32 +47,45 @@ const Index = () => {
       
       if (response.status === 'error') {
         setApiStatus('error');
-        throw new Error(response.message || 'Erro ao buscar comentários');
+        setStatusMessage(response.message || 'Erro ao buscar comentários');
+        setFilteredComments([]);
+        
+        toast({
+          title: "Erro na busca",
+          description: response.message || "Não foi possível buscar os comentários reais",
+          variant: "destructive"
+        });
+      } else {
+        // Sucesso - dados reais obtidos
+        const comments: Comment[] = response.comments.map(comment => ({
+          id: comment.id,
+          username: comment.username,
+          text: comment.text,
+          timestamp: comment.timestamp,
+          likes: comment.likes
+        }));
+        
+        setFilteredComments(comments);
+        setApiStatus('success');
+        setStatusMessage(response.message || 'Comentários reais obtidos com sucesso');
+        
+        toast({
+          title: "Busca concluída!",
+          description: `${comments.length} comentários reais encontrados`,
+        });
       }
       
-      // Converte os comentários para o formato esperado
-      const comments: Comment[] = response.comments.map(comment => ({
-        id: comment.id,
-        username: comment.username,
-        text: comment.text,
-        timestamp: comment.timestamp,
-        likes: comment.likes
-      }));
-      
-      setFilteredComments(comments);
       setIsSearched(true);
-      
-      toast({
-        title: "Busca concluída!",
-        description: `${comments.length} comentários encontrados`,
-      });
       
     } catch (error) {
       console.error('Erro na busca:', error);
       setApiStatus('error');
+      setStatusMessage('Erro interno da aplicação');
+      setFilteredComments([]);
+      
       toast({
-        title: "Erro na busca",
-        description: error instanceof Error ? error.message : "Não foi possível carregar os comentários",
+        title: "Erro interno",
+        description: "Erro inesperado na aplicação",
         variant: "destructive"
       });
     } finally {
@@ -88,8 +103,8 @@ const Index = () => {
               <Instagram className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Busca Comentário</h1>
-              <p className="text-gray-600 text-sm">Encontre comentários específicos em publicações do Instagram</p>
+              <h1 className="text-2xl font-bold text-gray-900">Busca Comentário Real</h1>
+              <p className="text-gray-600 text-sm">Busque comentários reais em publicações do Instagram</p>
             </div>
           </div>
         </div>
@@ -97,30 +112,29 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* API Status Error */}
-        {apiStatus === 'error' && isSearched && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+        {/* API Status */}
+        {isSearched && (
+          <div className={`border rounded-xl p-4 mb-6 ${
+            apiStatus === 'error' 
+              ? 'bg-red-50 border-red-200' 
+              : 'bg-green-50 border-green-200'
+          }`}>
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              {apiStatus === 'error' ? (
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+              )}
               <div>
-                <h3 className="text-sm font-medium text-red-800">Erro na API</h3>
-                <p className="text-sm text-red-700 mt-1">
-                  Não foi possível buscar os comentários reais. Verifique o link ou tente novamente mais tarde.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Real Data Success */}
-        {apiStatus === 'success' && isSearched && filteredComments.length > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-sm font-medium text-green-800">Dados Reais do Instagram</h3>
-                <p className="text-sm text-green-700 mt-1">
-                  Os comentários foram obtidos diretamente da API do Instagram!
+                <h3 className={`text-sm font-medium ${
+                  apiStatus === 'error' ? 'text-red-800' : 'text-green-800'
+                }`}>
+                  {apiStatus === 'error' ? 'Erro na API' : 'Dados Reais do Instagram'}
+                </h3>
+                <p className={`text-sm mt-1 ${
+                  apiStatus === 'error' ? 'text-red-700' : 'text-green-700'
+                }`}>
+                  {statusMessage}
                 </p>
               </div>
             </div>
@@ -144,19 +158,19 @@ const Index = () => {
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              <span className="ml-3 text-gray-600">Conectando com Instagram e carregando comentários...</span>
+              <span className="ml-3 text-gray-600">Buscando comentários reais do Instagram...</span>
             </div>
           </div>
         )}
 
         {/* Results */}
-        {isSearched && !isLoading && (
+        {isSearched && !isLoading && apiStatus === 'success' && (
           <div className="bg-white rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Comentários Encontrados
+                Comentários Reais Encontrados
               </h2>
-              <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
                 {filteredComments.length} {filteredComments.length === 1 ? 'comentário' : 'comentários'}
               </span>
             </div>
@@ -177,39 +191,24 @@ const Index = () => {
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="font-medium">2.</span>
-                  <span>Digite um nome de usuário ou palavra-chave para filtrar os comentários (opcional)</span>
+                  <span>Digite um nome de usuário ou palavra-chave para filtrar (opcional)</span>
                 </p>
                 <p className="flex items-start gap-2">
                   <span className="font-medium">3.</span>
-                  <span>Clique em "Buscar Comentários" para ver os resultados reais da API</span>
+                  <span>Clique em "Buscar Comentários" para ver os resultados reais</span>
                 </p>
               </div>
             </div>
 
             <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-green-900 mb-3">🎯 API Integrada:</h3>
+              <h3 className="text-lg font-semibold text-green-900 mb-3">🎯 Sistema Real:</h3>
               <div className="space-y-3 text-green-800">
-                <p>O sistema está integrado com múltiplas APIs do Instagram via RapidAPI:</p>
+                <p>Integrado com APIs reais do Instagram para buscar comentários reais!</p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Instagram Scraper Stable API</li>
-                  <li>Instagram Basic Scraper</li>
-                  <li>Instagram Posts Scraper</li>
-                </ul>
-                <p className="text-sm mt-3">
-                  <strong>Dados Reais:</strong> Todos os comentários são buscados diretamente do Instagram!
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-purple-900 mb-3">✨ Recursos:</h3>
-              <div className="space-y-3 text-purple-800">
-                <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Busca comentários reais em tempo real</li>
-                  <li>Filtro por nome de usuário ou palavra-chave</li>
+                  <li>Sem dados fictícios ou simulados</li>
+                  <li>Comentários reais de publicações públicas</li>
+                  <li>Filtros funcionais em tempo real</li>
                   <li>Suporte a Posts, Reels e IGTV</li>
-                  <li>Tratamento automático de rate limits</li>
-                  <li>Múltiplas APIs para maior sucesso</li>
                 </ul>
               </div>
             </div>
@@ -221,7 +220,7 @@ const Index = () => {
       <footer className="bg-white border-t mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <p className="text-center text-gray-600 text-sm">
-            Busca Comentário - Ferramenta para filtrar comentários do Instagram
+            Busca Comentário Real - Dados reais do Instagram
           </p>
         </div>
       </footer>
