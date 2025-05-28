@@ -1,4 +1,3 @@
-
 // Serviço para integração com API do Instagram
 // Sistema híbrido: APIs pagas + fallback inteligente
 
@@ -49,8 +48,8 @@ const PREMIUM_APIS = [
     name: 'Instagram API Fast Reliable Data Scraper',
     host: 'instagram-api-fast-reliable-data-scraper.p.rapidapi.com',
     endpoint: (postId: string) => `/post-comments?shortcode=${postId}`,
-    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI',
-    active: false,
+    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    active: true,
     price: '$9.99/mês',
     features: ['Comentários diretos', 'API rápida e confiável', 'Dados estruturados', 'Rate limit alto']
   },
