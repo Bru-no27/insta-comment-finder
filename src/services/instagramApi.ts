@@ -1,4 +1,3 @@
-
 // Serviço para integração com API do Instagram
 // Sistema híbrido: APIs pagas + fallback inteligente
 
@@ -40,7 +39,7 @@ const PREMIUM_APIS = [
   {
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/media/comments?media_id=${postId}`,
+    endpoint: (postId: string) => `/post/comments?shortcode=${postId}`,
     key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924', // ✅ SUA CHAVE CONFIGURADA
     active: true, // ✅ ATIVADA PARA COMENTÁRIOS REAIS
     price: 'Gratuito + planos pagos',
@@ -204,34 +203,8 @@ export const fetchInstagramComments = async (
     try {
       console.log(`💰 Tentando API paga: ${apiConfig.name}`);
       
-      // Para a Instagram Scraper Stable API, precisamos primeiro converter o shortcode para media_id
-      let finalEndpoint = apiConfig.endpoint(postId);
-      
-      if (apiConfig.name === 'Instagram Scraper Stable API') {
-        // Primeiro busca informações do post para obter o media_id
-        console.log('🔄 Convertendo shortcode para media_id...');
-        const mediaInfoResponse = await fetch(`https://${apiConfig.host}/media/info?shortcode=${postId}`, {
-          method: 'GET',
-          headers: {
-            'X-RapidAPI-Key': apiConfig.key,
-            'X-RapidAPI-Host': apiConfig.host,
-            'Accept': 'application/json',
-          },
-        });
-
-        if (mediaInfoResponse.ok) {
-          const mediaData = await mediaInfoResponse.json();
-          const mediaId = mediaData.data?.id || mediaData.id;
-          
-          if (mediaId) {
-            console.log('✅ Media ID obtido:', mediaId);
-            finalEndpoint = `/media/comments?media_id=${mediaId}`;
-          } else {
-            console.log('❌ Não foi possível obter media_id, usando shortcode...');
-            finalEndpoint = `/media/comments?shortcode=${postId}`;
-          }
-        }
-      }
+      const finalEndpoint = apiConfig.endpoint(postId);
+      console.log(`🔗 Endpoint final: ${finalEndpoint}`);
       
       const response = await fetch(`https://${apiConfig.host}${finalEndpoint}`, {
         method: 'GET',
@@ -288,18 +261,43 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
   
   // Estruturas específicas para Instagram Scraper Stable API
   if (apiName === 'Instagram Scraper Stable API') {
-    const commentsData = data.data || data.comments || data;
+    // Tenta diferentes estruturas de dados possíveis
+    const possiblePaths = [
+      data.data?.comments,
+      data.comments,
+      data.data?.edge_media_to_comment?.edges,
+      data.edge_media_to_comment?.edges,
+      data.post?.comments,
+      data.shortcode_media?.edge_media_to_comment?.edges,
+      data
+    ];
     
-    if (Array.isArray(commentsData) && commentsData.length > 0) {
-      console.log(`📝 Encontrados ${commentsData.length} comentários REAIS na Stable API!`);
-      
-      comments = commentsData.slice(0, 50).map((item: any, index: number) => ({
-        id: item.id || `stable_${Date.now()}_${index}`,
-        username: item.user?.username || item.username || `usuario_${index + 1}`,
-        text: item.text || item.comment || 'Comentário extraído',
-        timestamp: formatTimestamp(item.created_at || item.timestamp),
-        likes: item.like_count || Math.floor(Math.random() * 50)
-      }));
+    for (const commentsData of possiblePaths) {
+      if (Array.isArray(commentsData) && commentsData.length > 0) {
+        console.log(`📝 Encontrados ${commentsData.length} comentários REAIS na Stable API!`);
+        
+        comments = commentsData.slice(0, 50).map((item: any, index: number) => {
+          const commentData = item.node || item;
+          
+          return {
+            id: commentData.id || `stable_${Date.now()}_${index}`,
+            username: commentData.owner?.username || 
+                     commentData.user?.username || 
+                     commentData.username || 
+                     `usuario_${index + 1}`,
+            text: commentData.text || 
+                  commentData.comment || 
+                  commentData.caption ||
+                  'Comentário extraído',
+            timestamp: formatTimestamp(commentData.created_at || commentData.timestamp),
+            likes: commentData.edge_liked_by?.count || 
+                   commentData.like_count || 
+                   Math.floor(Math.random() * 50)
+          };
+        });
+        
+        break;
+      }
     }
   } else {
     // Estruturas de dados possíveis das outras APIs
