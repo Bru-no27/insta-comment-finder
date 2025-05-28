@@ -21,19 +21,22 @@ export const extractPostId = (url: string): string | null => {
 
 // Status da configuração das APIs
 export const getApiStatus = (): ApiStatus => {
+  const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
+  const isKeyConfigured = Boolean(rapidApiKey && rapidApiKey.trim() !== '');
+  
   const configuredApis = PREMIUM_APIS.filter(api => 
-    api.key !== 'SUA_CHAVE_RAPIDAPI_AQUI' && api.active
+    isKeyConfigured && api.active
   );
   
   return {
     totalApis: PREMIUM_APIS.length,
     configuredApis: configuredApis.length,
-    isConfigured: configuredApis.length > 0,
+    isConfigured: isKeyConfigured,
     availableApis: PREMIUM_APIS.map(api => ({
       name: api.name,
       price: api.price,
       features: api.features,
-      isConfigured: api.key !== 'SUA_CHAVE_RAPIDAPI_AQUI' && api.active
+      isConfigured: isKeyConfigured && api.active
     }))
   };
 };

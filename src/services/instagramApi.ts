@@ -34,9 +34,27 @@ export const fetchInstagramComments = async (
   const apiStatus = getApiStatus();
   console.log('📊 Status das APIs:', apiStatus);
 
+  // Verifica se a chave da API está configurada
+  const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
+  if (!rapidApiKey || rapidApiKey.trim() === '') {
+    return {
+      comments: [],
+      total: 0,
+      status: 'error',
+      message: `❌ Chave do RapidAPI não configurada. 
+      
+      Para usar comentários reais:
+      1. 🔑 Configure a variável de ambiente VITE_RAPIDAPI_KEY
+      2. 📝 Adicione sua chave do RapidAPI no arquivo .env
+      3. 🔄 Reinicie o servidor de desenvolvimento
+      
+      👉 Acesse rapidapi.com para obter sua chave gratuita!`
+    };
+  }
+
   // Tenta APIs REAIS (verificadas e funcionais)
   for (const apiConfig of PREMIUM_APIS) {
-    if (!apiConfig.active || apiConfig.key === 'SUA_CHAVE_RAPIDAPI_AQUI') {
+    if (!apiConfig.active || !rapidApiKey) {
       console.log(`⏭️ ${apiConfig.name} não configurada`);
       continue;
     }
@@ -51,7 +69,7 @@ export const fetchInstagramComments = async (
       const response = await fetch(fullUrl, {
         method: 'GET',
         headers: {
-          'X-RapidAPI-Key': apiConfig.key,
+          'X-RapidAPI-Key': rapidApiKey,
           'X-RapidAPI-Host': apiConfig.host,
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
