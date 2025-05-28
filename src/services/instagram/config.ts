@@ -5,7 +5,7 @@ export const PREMIUM_APIS: ApiConfig[] = [
   {
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/get-post-by-shortcode?shortcode=${postId}`,
+    endpoint: (postId: string) => `/get_post_by_shortcode/${postId}`,
     key: import.meta.env.VITE_RAPIDAPI_KEY || '',
     active: true,
     price: 'Freemium - Plano Gratuito',
@@ -14,7 +14,7 @@ export const PREMIUM_APIS: ApiConfig[] = [
   {
     name: 'Instagram Bulk Profile Scrapper',
     host: 'instagram-bulk-profile-scrapper.p.rapidapi.com',
-    endpoint: (postId: string) => `/clients/api/ig/media_info?code_or_id_or_url=${postId}`,
+    endpoint: (postId: string) => `/media_info/${postId}`,
     key: import.meta.env.VITE_RAPIDAPI_KEY || '',
     active: true,
     price: 'Freemium',
@@ -23,7 +23,7 @@ export const PREMIUM_APIS: ApiConfig[] = [
   {
     name: 'Instagram Media Downloader',
     host: 'instagram-media-downloader.p.rapidapi.com',
-    endpoint: (postId: string) => `/module/media?url=https://www.instagram.com/p/${postId}/`,
+    endpoint: (postId: string) => `/media/${postId}`,
     key: import.meta.env.VITE_RAPIDAPI_KEY || '',
     active: true,
     price: 'Freemium',
@@ -32,7 +32,7 @@ export const PREMIUM_APIS: ApiConfig[] = [
   {
     name: 'Social Media Scraper API',
     host: 'social-media-scraper-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/instagram-post/${postId}`,
+    endpoint: (postId: string) => `/instagram/${postId}`,
     key: import.meta.env.VITE_RAPIDAPI_KEY || '',
     active: true,
     price: 'Freemium',
