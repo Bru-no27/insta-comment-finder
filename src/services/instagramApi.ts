@@ -40,7 +40,7 @@ const PREMIUM_APIS = [
   {
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/post/comments?shortcode=${postId}`,
+    endpoint: (postId: string) => `/post?shortcode=${postId}`,
     key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924', // ✅ SUA CHAVE CONFIGURADA
     active: true, // ✅ ATIVADA PARA COMENTÁRIOS REAIS
     price: 'Gratuito + planos pagos',
@@ -145,6 +145,8 @@ export const fetchInstagramComments = async (
             status: 'success',
             message: `✅ ${realComments.length} comentários REAIS obtidos via ${apiConfig.name}`
           };
+        } else {
+          console.log(`⚠️ ${apiConfig.name} - Nenhum comentário encontrado nos dados`);
         }
       } else {
         const errorText = await response.text();
@@ -162,7 +164,7 @@ export const fetchInstagramComments = async (
     comments: [],
     total: 0,
     status: 'error',
-    message: 'Não foi possível obter comentários reais. Configure uma API válida ou verifique se a publicação existe e tem comentários públicos.'
+    message: 'Não foi possível obter comentários reais. Verifique se a publicação existe, tem comentários públicos, ou se a API está funcionando corretamente.'
   };
 };
 
@@ -176,13 +178,14 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
   if (apiName === 'Instagram Scraper Stable API') {
     // Tenta diferentes estruturas de dados possíveis
     const possiblePaths = [
-      data.data?.comments,
-      data.comments,
       data.data?.edge_media_to_comment?.edges,
       data.edge_media_to_comment?.edges,
+      data.data?.comments,
+      data.comments,
       data.post?.comments,
       data.shortcode_media?.edge_media_to_comment?.edges,
-      data
+      data.data?.shortcode_media?.edge_media_to_comment?.edges,
+      data.graphql?.shortcode_media?.edge_media_to_comment?.edges
     ];
     
     for (const commentsData of possiblePaths) {
