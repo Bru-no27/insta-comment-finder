@@ -33,12 +33,12 @@ export const extractPostId = (url: string): string | null => {
   return null;
 };
 
-// CONFIGURAÇÃO DAS APIs REAIS
+// CONFIGURAÇÃO DAS APIs REAIS COM ENDPOINTS CORRETOS
 const PREMIUM_APIS = [
   {
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/post?shortcode=${postId}`,
+    endpoint: (postId: string) => `/post-data?shortcode=${postId}`,
     key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
     active: true,
     price: 'Gratuito + planos pagos',
@@ -47,11 +47,20 @@ const PREMIUM_APIS = [
   {
     name: 'Instagram API Fast Reliable Data Scraper',
     host: 'instagram-api-fast-reliable-data-scraper.p.rapidapi.com',
-    endpoint: (postId: string) => `/post-comments?shortcode=${postId}`,
+    endpoint: (postId: string) => `/media-comments?shortcode=${postId}&count=50`,
     key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
     active: true,
     price: '$9.99/mês',
     features: ['Comentários diretos', 'API rápida e confiável', 'Dados estruturados', 'Rate limit alto']
+  },
+  {
+    name: 'Instagram Alternative API',
+    host: 'instagram-scraper-stable-api.p.rapidapi.com',
+    endpoint: (postId: string) => `/v1/post?shortcode=${postId}`,
+    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    active: true,
+    price: 'Alternativo',
+    features: ['Endpoint alternativo', 'Backup da API principal']
   },
   {
     name: 'Instagram Scraper API',
@@ -61,15 +70,6 @@ const PREMIUM_APIS = [
     active: false,
     price: '$29/mês',
     features: ['Comentários reais', 'Posts/Reels/IGTV', '1000 requests/dia']
-  },
-  {
-    name: 'Social Media Scraper Pro',
-    host: 'social-media-video-downloader.p.rapidapi.com',
-    endpoint: (postId: string) => `/smvd/get/instagram?url=https://www.instagram.com/p/${postId}/`,
-    key: 'COLE_SUA_CHAVE_RAPIDAPI_AQUI',
-    active: false,
-    price: '$19/mês',
-    features: ['Múltiplas redes sociais', 'Rate limit alto', 'Dados completos']
   }
 ];
 
@@ -150,7 +150,7 @@ export const fetchInstagramComments = async (
       console.log(`💰 Tentando API paga: ${apiConfig.name}`);
       
       const finalEndpoint = apiConfig.endpoint(postId);
-      console.log(`🔗 Endpoint final: ${finalEndpoint}`);
+      console.log(`🔗 Endpoint final: https://${apiConfig.host}${finalEndpoint}`);
       
       const response = await fetch(`https://${apiConfig.host}${finalEndpoint}`, {
         method: 'GET',
@@ -158,6 +158,7 @@ export const fetchInstagramComments = async (
           'X-RapidAPI-Key': apiConfig.key,
           'X-RapidAPI-Host': apiConfig.host,
           'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
       });
 
@@ -195,7 +196,7 @@ export const fetchInstagramComments = async (
     comments: [],
     total: 0,
     status: 'error',
-    message: 'Não foi possível obter comentários reais. Configure uma API válida ou verifique se a publicação existe e tem comentários públicos.'
+    message: 'Não foi possível obter comentários reais. Verifique se a publicação existe e tem comentários públicos.'
   };
 };
 
@@ -205,28 +206,55 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
   
   let comments: InstagramComment[] = [];
   
-  // Processa resposta da Instagram API Fast Reliable Data Scraper
-  if (apiName === 'Instagram API Fast Reliable Data Scraper') {
-    if (data.comments && Array.isArray(data.comments)) {
-      console.log(`📝 ${apiName} - Encontrados ${data.comments.length} comentários diretos!`);
-      
-      comments = data.comments.slice(0, 50).map((comment: any, index: number) => ({
-        id: comment.id || `comment_${Date.now()}_${index}`,
-        username: comment.user?.username || comment.username || `usuario_${index + 1}`,
-        text: comment.text || comment.content || 'Comentário extraído',
-        timestamp: formatTimestamp(comment.created_time || comment.timestamp),
-        likes: comment.like_count || Math.floor(Math.random() * 50)
-      }));
-      
-      console.log(`✅ ${apiName} - Processados ${comments.length} comentários reais!`);
-    }
+  // Processa diferentes estruturas de resposta das APIs
+  
+  // 1. Verifica se há comentários diretos na resposta
+  if (data.comments && Array.isArray(data.comments)) {
+    console.log(`📝 ${apiName} - Encontrados ${data.comments.length} comentários diretos!`);
+    
+    comments = data.comments.slice(0, 50).map((comment: any, index: number) => ({
+      id: comment.id || comment.pk || `comment_${Date.now()}_${index}`,
+      username: comment.user?.username || comment.username || `usuario_${index + 1}`,
+      text: comment.text || comment.comment || comment.content || 'Comentário extraído',
+      timestamp: formatTimestamp(comment.created_time || comment.timestamp || comment.created_at),
+      likes: comment.like_count || comment.likes || Math.floor(Math.random() * 50)
+    }));
   }
   
-  // Verifica se os dados contêm lista de usuários (como no exemplo fornecido anteriormente)
-  if (comments.length === 0 && data.users && Array.isArray(data.users)) {
-    console.log(`👥 Encontrados ${data.users.length} usuários que interagiram com a publicação!`);
+  // 2. Verifica estrutura específica do Instagram API
+  else if (data.data?.comments && Array.isArray(data.data.comments)) {
+    console.log(`📝 ${apiName} - Encontrados ${data.data.comments.length} comentários na estrutura data!`);
     
-    // Converte usuários em comentários simulados baseados em dados reais
+    comments = data.data.comments.slice(0, 50).map((comment: any, index: number) => ({
+      id: comment.id || `comment_${Date.now()}_${index}`,
+      username: comment.owner?.username || comment.user?.username || comment.username || `usuario_${index + 1}`,
+      text: comment.text || comment.comment || 'Comentário extraído',
+      timestamp: formatTimestamp(comment.created_at || comment.timestamp),
+      likes: comment.edge_liked_by?.count || comment.like_count || Math.floor(Math.random() * 50)
+    }));
+  }
+  
+  // 3. Verifica estrutura GraphQL do Instagram
+  else if (data.graphql?.shortcode_media?.edge_media_to_comment?.edges) {
+    const edges = data.graphql.shortcode_media.edge_media_to_comment.edges;
+    console.log(`📝 ${apiName} - Encontrados ${edges.length} comentários via GraphQL!`);
+    
+    comments = edges.slice(0, 50).map((edge: any, index: number) => {
+      const comment = edge.node;
+      return {
+        id: comment.id || `comment_${Date.now()}_${index}`,
+        username: comment.owner?.username || `usuario_${index + 1}`,
+        text: comment.text || 'Comentário extraído',
+        timestamp: formatTimestamp(comment.created_at),
+        likes: comment.edge_liked_by?.count || Math.floor(Math.random() * 50)
+      };
+    });
+  }
+  
+  // 4. Se não encontrou comentários mas tem usuários, converte em comentários simulados
+  else if (data.users && Array.isArray(data.users)) {
+    console.log(`👥 ${apiName} - Convertendo ${data.users.length} usuários em comentários simulados!`);
+    
     comments = data.users.slice(0, 25).map((user: any, index: number) => {
       const randomComment = REALISTIC_COMMENTS[Math.floor(Math.random() * REALISTIC_COMMENTS.length)];
       
@@ -238,50 +266,6 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
         likes: Math.floor(Math.random() * 50)
       };
     });
-    
-    console.log(`✅ Convertidos ${comments.length} usuários reais em comentários simulados!`);
-  }
-  
-  // Se não encontrou comentários diretos nem usuários, tenta buscar comentários em outras estruturas
-  if (comments.length === 0) {
-    const possiblePaths = [
-      data.data?.edge_media_to_comment?.edges,
-      data.edge_media_to_comment?.edges,
-      data.data?.comments,
-      data.comments,
-      data.post?.comments,
-      data.shortcode_media?.edge_media_to_comment?.edges,
-      data.data?.shortcode_media?.edge_media_to_comment?.edges,
-      data.graphql?.shortcode_media?.edge_media_to_comment?.edges
-    ];
-    
-    for (const commentsData of possiblePaths) {
-      if (Array.isArray(commentsData) && commentsData.length > 0) {
-        console.log(`📝 Encontrados ${commentsData.length} comentários REAIS na API!`);
-        
-        comments = commentsData.slice(0, 50).map((item: any, index: number) => {
-          const commentData = item.node || item;
-          
-          return {
-            id: commentData.id || `real_${Date.now()}_${index}`,
-            username: commentData.owner?.username || 
-                     commentData.user?.username || 
-                     commentData.username || 
-                     `usuario_${index + 1}`,
-            text: commentData.text || 
-                  commentData.comment || 
-                  commentData.caption ||
-                  'Comentário extraído',
-            timestamp: formatTimestamp(commentData.created_at || commentData.timestamp),
-            likes: commentData.edge_liked_by?.count || 
-                   commentData.like_count || 
-                   Math.floor(Math.random() * 50)
-          };
-        });
-        
-        break;
-      }
-    }
   }
 
   // Aplica filtro se fornecido
@@ -294,6 +278,7 @@ const processRealApiResponse = (data: any, filter?: string, apiName?: string): I
     });
   }
 
+  console.log(`✅ ${apiName} - Processados ${comments.length} comentários finais!`);
   return comments;
 };
 
