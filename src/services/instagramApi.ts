@@ -40,7 +40,7 @@ const PREMIUM_APIS = [
     name: 'Instagram Scraper Stable API',
     host: 'instagram-scraper-stable-api.p.rapidapi.com',
     endpoint: (postId: string) => `/get-post-by-shortcode?shortcode=${postId}`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    key: 'SUA_CHAVE_RAPIDAPI_AQUI', // ← COLE SUA CHAVE REAL DO RAPIDAPI AQUI
     active: true,
     price: 'Freemium - Plano Gratuito',
     features: ['✅ API VERIFICADA 2024', 'Plano gratuito disponível', 'Comentários reais', 'Endpoint estável']
@@ -49,7 +49,7 @@ const PREMIUM_APIS = [
     name: 'Instagram Bulk Profile Scrapper',
     host: 'instagram-bulk-profile-scrapper.p.rapidapi.com',
     endpoint: (postId: string) => `/clients/api/ig/media_info?code_or_id_or_url=${postId}`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    key: 'SUA_CHAVE_RAPIDAPI_AQUI', // ← COLE SUA CHAVE REAL DO RAPIDAPI AQUI
     active: true,
     price: 'Freemium',
     features: ['✅ API ATIVA', 'Scraper em massa', 'Dados completos', 'Comentários inclusos']
@@ -58,7 +58,7 @@ const PREMIUM_APIS = [
     name: 'Instagram Media Downloader',
     host: 'instagram-media-downloader.p.rapidapi.com',
     endpoint: (postId: string) => `/module/media?url=https://www.instagram.com/p/${postId}/`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    key: 'SUA_CHAVE_RAPIDAPI_AQUI', // ← COLE SUA CHAVE REAL DO RAPIDAPI AQUI
     active: true,
     price: 'Freemium',
     features: ['✅ API FUNCIONAL', 'Download de mídia', 'Metadados inclusos', 'Comentários disponíveis']
@@ -67,7 +67,7 @@ const PREMIUM_APIS = [
     name: 'Social Media Scraper API',
     host: 'social-media-scraper-api.p.rapidapi.com',
     endpoint: (postId: string) => `/instagram-post/${postId}`,
-    key: 'f34e5a19d6msh390627795de429ep1e3ca8jsn219636894924',
+    key: 'SUA_CHAVE_RAPIDAPI_AQUI', // ← COLE SUA CHAVE REAL DO RAPIDAPI AQUI
     active: true,
     price: 'Freemium',
     features: ['✅ MULTIMÍDIA', 'Instagram + outros', 'Dados estruturados', 'Suporte a comentários']
@@ -77,7 +77,7 @@ const PREMIUM_APIS = [
 // Status da configuração das APIs
 export const getApiStatus = () => {
   const configuredApis = PREMIUM_APIS.filter(api => 
-    api.key !== 'COLE_SUA_CHAVE_RAPIDAPI_AQUI' && api.active
+    api.key !== 'SUA_CHAVE_RAPIDAPI_AQUI' && api.active
   );
   
   return {
@@ -88,7 +88,7 @@ export const getApiStatus = () => {
       name: api.name,
       price: api.price,
       features: api.features,
-      isConfigured: api.key !== 'COLE_SUA_CHAVE_RAPIDAPI_AQUI' && api.active
+      isConfigured: api.key !== 'SUA_CHAVE_RAPIDAPI_AQUI' && api.active
     }))
   };
 };
