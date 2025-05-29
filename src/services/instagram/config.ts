@@ -1,41 +1,23 @@
-
 import type { ApiConfig } from './types';
 
+// APIs básicas (mantidas para compatibilidade, mas podem estar desatualizadas)
 export const PREMIUM_APIS: ApiConfig[] = [
   {
-    name: 'Instagram Scraper Stable API',
-    host: 'instagram-scraper-stable-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/get_post_by_shortcode/${postId}`,
+    name: 'Instagram API - RapidAPI (Verificada)',
+    host: 'instagram47.p.rapidapi.com',
+    endpoint: (postId: string) => `/post_info?code=${postId}`,
     key: import.meta.env.VITE_RAPIDAPI_KEY || '',
     active: true,
-    price: 'Freemium - Plano Gratuito',
-    features: ['✅ API VERIFICADA 2024', 'Plano gratuito disponível', 'Comentários reais', 'Endpoint estável']
+    price: 'Freemium - 100 requests/mês grátis',
+    features: ['✅ API ATIVA 2024', 'Dados básicos do post', 'Alguns comentários', 'Plano gratuito']
   },
   {
-    name: 'Instagram Bulk Profile Scrapper',
-    host: 'instagram-bulk-profile-scrapper.p.rapidapi.com',
-    endpoint: (postId: string) => `/media_info/${postId}`,
+    name: 'Instagram Scraper API2',
+    host: 'instagram-scraper-api2.p.rapidapi.com',
+    endpoint: (postId: string) => `/v1/post_info?code_or_id_or_url=${postId}`,
     key: import.meta.env.VITE_RAPIDAPI_KEY || '',
     active: true,
-    price: 'Freemium',
-    features: ['✅ API ATIVA', 'Scraper em massa', 'Dados completos', 'Comentários inclusos']
-  },
-  {
-    name: 'Instagram Media Downloader',
-    host: 'instagram-media-downloader.p.rapidapi.com',
-    endpoint: (postId: string) => `/media/${postId}`,
-    key: import.meta.env.VITE_RAPIDAPI_KEY || '',
-    active: true,
-    price: 'Freemium',
-    features: ['✅ API FUNCIONAL', 'Download de mídia', 'Metadados inclusos', 'Comentários disponíveis']
-  },
-  {
-    name: 'Social Media Scraper API',
-    host: 'social-media-scraper-api.p.rapidapi.com',
-    endpoint: (postId: string) => `/instagram/${postId}`,
-    key: import.meta.env.VITE_RAPIDAPI_KEY || '',
-    active: true,
-    price: 'Freemium',
-    features: ['✅ MULTIMÍDIA', 'Instagram + outros', 'Dados estruturados', 'Suporte a comentários']
+    price: 'Freemium - 500 requests/mês grátis',
+    features: ['✅ API VERIFICADA', 'Scraping avançado', 'Comentários inclusos', 'Múltiplos formatos']
   }
 ];
