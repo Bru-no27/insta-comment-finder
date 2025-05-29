@@ -1,0 +1,25 @@
+
+services:
+  - type: web
+    name: instagram-scraper-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false
+      - key: BOT_USERNAME
+        sync: false
+      - key: BOT_PASSWORD
+        sync: false
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "10"
+      - key: RATE_LIMIT_WINDOW
+        value: "900000"
+      - key: MAX_COMMENTS
+        value: "100"
+      - key: SCROLL_DELAY
+        value: "2000"

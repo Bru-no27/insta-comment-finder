@@ -1,11 +1,10 @@
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SearchForm from "@/components/SearchForm";
 import CommentList from "@/components/CommentList";
-import { fetchInstagramComments } from "@/services/instagramApi";
+import { externalBackendApi } from "@/services/externalBackendApi";
 import { useToast } from "@/hooks/use-toast";
-import type { InstagramComment } from "@/services/instagram/types";
+import type { ExternalBackendComment } from "@/services/externalBackendApi";
 
 const Index = () => {
   const [instagramUrl, setInstagramUrl] = useState('');
@@ -13,12 +12,12 @@ const Index = () => {
   const [filterType, setFilterType] = useState<'keyword' | 'username' | 'comment_number'>('keyword');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [commentNumber, setCommentNumber] = useState('');
-  const [comments, setComments] = useState<InstagramComment[]>([]);
+  const [comments, setComments] = useState<ExternalBackendComment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchMessage, setSearchMessage] = useState('');
   const { toast } = useToast();
 
-  const applyFiltersAndSort = (rawComments: InstagramComment[]) => {
+  const applyFiltersAndSort = (rawComments: ExternalBackendComment[]) => {
     let filteredComments = [...rawComments];
 
     // Aplicar filtros
@@ -63,8 +62,10 @@ const Index = () => {
     setSearchMessage('');
 
     try {
-      // Buscar todos os comentários primeiro
-      const response = await fetchInstagramComments(instagramUrl);
+      console.log('🚀 Enviando requisição para o backend...');
+      const response = await externalBackendApi.fetchInstagramComments(instagramUrl);
+      
+      console.log('📡 Resposta recebida:', response);
       
       // Aplicar filtros e ordenação
       const processedComments = applyFiltersAndSort(response.comments);
@@ -95,9 +96,10 @@ const Index = () => {
         });
       }
     } catch (error) {
+      console.error('❌ Erro na busca:', error);
       toast({
         title: "Erro na busca",
-        description: "Não foi possível buscar os comentários",
+        description: error instanceof Error ? error.message : "Não foi possível buscar os comentários",
         variant: "destructive"
       });
     } finally {
