@@ -1,41 +1,50 @@
 
 import type { InstagramComment } from './types';
 
-// Gerador de dados de demonstração mais realistas
+// Gerador de dados ultra-realistas para demonstração
 export class RealisticDemoGenerator {
-  private static readonly BRAZILIAN_USERNAMES = [
-    'mari_silva23', 'carlos_santos', 'ana.costa', 'pedro_oliveira', 'julia.ferreira',
-    'lucas_batista', 'camila.souza', 'rafael_lima', 'bianca.gomes', 'thiago_alves',
-    'larissa.rocha', 'felipe_martins', 'amanda_reis', 'gustavo.silva', 'isabela_santos',
-    'rodrigo.costa', 'fernanda_lima', 'bruno.santos', 'carolina_oliveira', 'daniel_souza'
+  private static readonly REALISTIC_USERNAMES = [
+    'mari_silva2024', 'carlos.santos_', 'ana_costa_oficial', 'pedro_oliveira23', 'julia.ferreira',
+    'lucas_batista_', 'camila.souza', 'rafael_lima_br', 'bianca.gomes23', 'thiago_alves_',
+    'larissa.rocha', 'felipe_martins', 'amanda_reis_', 'gustavo.silva2024', 'isabela_santos',
+    'rodrigo.costa_', 'fernanda_lima', 'bruno.santos_br', 'carolina_oliveira', 'daniel_souza23',
+    'melissa_carvalho', 'victor.nunes', 'patricia_mendes', 'leonardo_dias', 'natalia.rodrigues',
+    'andre_pereira_', 'vanessa.lima', 'ricardo_santos', 'priscila.costa', 'eduardo_silva23'
   ];
 
   private static readonly REALISTIC_COMMENTS = [
-    'Que foto linda! 😍', 'Amei esse look! 💕', 'Perfeita como sempre! ✨',
-    'Que lugar incrível! 🌟', 'Você está radiante! 💫', 'Inspiração total! 🔥',
-    'Que beleza! 😍💕', 'Amando esse conteúdo! 👏', 'Que energia boa! ✨',
-    'Você arrasa sempre! 💪', 'Que foto maravilhosa! 📸', 'Perfeição define! 💯',
-    'Que sorriso lindo! 😊', 'Amei demais! 💖', 'Você é uma inspiração! 🌟',
-    'Que momento especial! 💕', 'Que lugar paradisíaco! 🏝️', 'Você está deslumbrante! ✨',
-    'Que post incrível! 👌', 'Amando essa vibe! 🌈', 'Que energia positiva! ☀️',
-    'Você é incrível! 💫', 'Que beleza natural! 🌸', 'Perfeito! 👏',
-    'Que momento único! 📷', 'Você brilha! ⭐', 'Que inspiração! 💪',
-    'Amei essa foto! 😍', 'Que lugar lindo! 🌺', 'Você é luz! ✨'
+    'Que foto incrível! 😍 Amei demais!', 'Perfeita como sempre! ✨💕', 'Que lugar maravilhoso! 🌟',
+    'Você está radiante! 💫', 'Inspiração total! 🔥', 'Que beleza! 😍',
+    'Amando esse conteúdo! 👏', 'Que energia boa! ✨', 'Você arrasa sempre! 💪',
+    'Que foto maravilhosa! 📸', 'Perfeição define! 💯', 'Que sorriso lindo! 😊',
+    'Linda demais! 💖', 'Você é uma inspiração! 🌟', 'Que momento especial! 💕',
+    'Que lugar paradisíaco! 🏝️', 'Deslumbrante! ✨', 'Que post incrível! 👌',
+    'Amando essa vibe! 🌈', 'Energia positiva! ☀️', 'Você é incrível! 💫',
+    'Que beleza natural! 🌸', 'Perfeito! 👏', 'Momento único! 📷',
+    'Você brilha! ⭐', 'Que inspiração! 💪', 'Amei essa foto! 😍',
+    'Lugar lindo! 🌺', 'Você é luz! ✨', 'Que trabalho incrível! 🎨',
+    'Parabéns! 🎉', 'Sucesso sempre! 🚀', 'Que talento! 🎭',
+    'Maravilhosa! 💎', 'Top demais! 🔝', 'Que estilo! 👗',
+    'Arrasou! 💅', 'Que produção! 📽️', 'Espetacular! 🎪',
+    'Que conquista! 🏆', 'Muito orgulho! 🥹', 'Merecido! 👑'
   ];
 
-  private static readonly EMOJIS = ['😍', '💕', '✨', '🔥', '👏', '💯', '🌟', '💫', '😊', '💖', '🌈', '☀️', '⭐', '💪', '📸'];
+  private static readonly EMOJIS = [
+    '😍', '💕', '✨', '🔥', '👏', '💯', '🌟', '💫', '😊', '💖',
+    '🌈', '☀️', '⭐', '💪', '📸', '🎉', '🚀', '💎', '🔝', '👑'
+  ];
 
-  public static generateRealisticComments(count: number = 20, filter?: string): InstagramComment[] {
+  public static generateRealisticComments(count: number = 25, filter?: string): InstagramComment[] {
     const comments: InstagramComment[] = [];
     
     for (let i = 0; i < count; i++) {
       const username = this.getRandomUsername();
       const text = this.getRandomComment();
       const timestamp = this.getRandomTimestamp();
-      const likes = Math.floor(Math.random() * 100) + 1;
+      const likes = this.getRandomLikes();
       
       comments.push({
-        id: `demo_${Date.now()}_${i}`,
+        id: `demo_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 9)}`,
         username,
         text,
         timestamp,
@@ -56,14 +65,14 @@ export class RealisticDemoGenerator {
   }
 
   private static getRandomUsername(): string {
-    return this.BRAZILIAN_USERNAMES[Math.floor(Math.random() * this.BRAZILIAN_USERNAMES.length)];
+    return this.REALISTIC_USERNAMES[Math.floor(Math.random() * this.REALISTIC_USERNAMES.length)];
   }
 
   private static getRandomComment(): string {
     const baseComment = this.REALISTIC_COMMENTS[Math.floor(Math.random() * this.REALISTIC_COMMENTS.length)];
     
-    // 30% de chance de adicionar emoji extra
-    if (Math.random() < 0.3) {
+    // 40% de chance de adicionar emoji extra
+    if (Math.random() < 0.4) {
       const emoji = this.EMOJIS[Math.floor(Math.random() * this.EMOJIS.length)];
       return `${baseComment} ${emoji}`;
     }
@@ -73,27 +82,33 @@ export class RealisticDemoGenerator {
 
   private static getRandomTimestamp(): string {
     const now = new Date();
-    const daysAgo = Math.floor(Math.random() * 30); // Últimos 30 dias
-    const hoursAgo = Math.floor(Math.random() * 24);
-    const minutesAgo = Math.floor(Math.random() * 60);
+    const minutesAgo = Math.floor(Math.random() * 43200); // Últimas 30 dias em minutos
     
-    const commentDate = new Date(now);
-    commentDate.setDate(commentDate.getDate() - daysAgo);
-    commentDate.setHours(commentDate.getHours() - hoursAgo);
-    commentDate.setMinutes(commentDate.getMinutes() - minutesAgo);
-    
-    if (daysAgo === 0) {
-      if (hoursAgo === 0) {
-        return `${minutesAgo}m`;
-      }
-      return `${hoursAgo}h`;
-    } else if (daysAgo === 1) {
-      return '1d';
-    } else if (daysAgo < 7) {
-      return `${daysAgo}d`;
+    if (minutesAgo < 60) {
+      return `${minutesAgo}m`;
+    } else if (minutesAgo < 1440) {
+      const hours = Math.floor(minutesAgo / 60);
+      return `${hours}h`;
+    } else if (minutesAgo < 10080) {
+      const days = Math.floor(minutesAgo / 1440);
+      return `${days}d`;
     } else {
-      const weeks = Math.floor(daysAgo / 7);
+      const weeks = Math.floor(minutesAgo / 10080);
       return `${weeks}w`;
+    }
+  }
+
+  private static getRandomLikes(): number {
+    // Distribuição mais realista de curtidas
+    const rand = Math.random();
+    if (rand < 0.6) {
+      return Math.floor(Math.random() * 10) + 1; // 1-10 curtidas (60%)
+    } else if (rand < 0.85) {
+      return Math.floor(Math.random() * 40) + 11; // 11-50 curtidas (25%)
+    } else if (rand < 0.95) {
+      return Math.floor(Math.random() * 100) + 51; // 51-150 curtidas (10%)
+    } else {
+      return Math.floor(Math.random() * 400) + 151; // 151-550 curtidas (5%)
     }
   }
 }
