@@ -1,14 +1,15 @@
-
 import React, { useState } from 'react';
-import { Microscope, AlertTriangle, Code, Globe, Shield, Database, Timer, Zap } from 'lucide-react';
+import { Microscope, AlertTriangle, Code, Globe, Shield, Database, Timer, Zap, Server, Bot, Lock, Cloud } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { advancedScraper, analyzeStoriesIGTechniques } from '@/services/advancedScraping';
+import { SimpliersInspiredScraper } from '@/services/instagram/simpliersTechniques';
 
 const SimpliersResearch = () => {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [selectedTechnique, setSelectedTechnique] = useState<string>('');
+  const [showBackendConfig, setShowBackendConfig] = useState(false);
   const { toast } = useToast();
 
   const techniques = [
@@ -88,6 +89,7 @@ const SimpliersResearch = () => {
 
   const analysis = analyzeStoriesIGTechniques();
   const riskAnalysis = advancedScraper.getRiskAnalysis();
+  const backendRequirements = SimpliersInspiredScraper.getBackendRequirements();
 
   return (
     <div className="space-y-6">
@@ -106,6 +108,193 @@ const SimpliersResearch = () => {
             <li>Use apenas APIs oficiais em projetos reais</li>
           </ul>
         </div>
+      </div>
+
+      {/* Backend Configuration Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Server className="h-6 w-6 text-blue-600" />
+            <h3 className="text-lg font-bold text-blue-900">🏗️ Configuração de Backend Profissional</h3>
+          </div>
+          <button
+            onClick={() => setShowBackendConfig(!showBackendConfig)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {showBackendConfig ? 'Ocultar' : 'Ver Configuração'}
+          </button>
+        </div>
+        
+        <p className="text-blue-800 mb-4">
+          <strong>Recomendação:</strong> Configure um sistema backend profissional para scraping automatizado sem exigir login dos usuários finais.
+        </p>
+
+        {showBackendConfig && (
+          <div className="space-y-6 mt-6">
+            {/* Bot System */}
+            <div className="bg-white rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Bot className="h-6 w-6 text-green-600" />
+                <h4 className="text-lg font-semibold text-gray-900">{backendRequirements.bots.description}</h4>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Requisitos:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.bots.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-green-600">•</span>
+                        {req}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Implementação:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.bots.implementation.map((impl, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-blue-600">•</span>
+                        {impl}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Session Management */}
+            <div className="bg-white rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Lock className="h-6 w-6 text-purple-600" />
+                <h4 className="text-lg font-semibold text-gray-900">{backendRequirements.sessionManagement.description}</h4>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Requisitos:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.sessionManagement.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-purple-600">•</span>
+                        {req}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Implementação:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.sessionManagement.implementation.map((impl, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-blue-600">•</span>
+                        {impl}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Scraping System */}
+            <div className="bg-white rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Code className="h-6 w-6 text-orange-600" />
+                <h4 className="text-lg font-semibold text-gray-900">{backendRequirements.scraping.description}</h4>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Requisitos:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.scraping.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-orange-600">•</span>
+                        {req}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Implementação:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.scraping.implementation.map((impl, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-blue-600">•</span>
+                        {impl}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Infrastructure */}
+            <div className="bg-white rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Cloud className="h-6 w-6 text-teal-600" />
+                <h4 className="text-lg font-semibold text-gray-900">{backendRequirements.infrastructure.description}</h4>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Requisitos:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.infrastructure.requirements.map((req, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-teal-600">•</span>
+                        {req}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                <div>
+                  <h5 className="font-medium text-gray-900 mb-2">Tecnologias:</h5>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    {backendRequirements.infrastructure.technologies.map((tech, index) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <span className="text-blue-600">•</span>
+                        {tech}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Implementation Flow */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-green-900 mb-4">🔄 Fluxo de Implementação Recomendado</h4>
+              <div className="space-y-3 text-green-800">
+                <div className="flex items-center gap-3">
+                  <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</span>
+                  <span>Usuário envia link do post via frontend</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</span>
+                  <span>Backend seleciona bot disponível automaticamente</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</span>
+                  <span>Sistema usa sessão armazenada (sem login no frontend)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">4</span>
+                  <span>Scraping headless coleta todos os comentários</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">5</span>
+                  <span>Dados processados e retornados para o frontend</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* URL Input */}

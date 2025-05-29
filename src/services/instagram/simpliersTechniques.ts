@@ -149,4 +149,74 @@ export class SimpliersInspiredScraper {
       likes: node.like_count || node.likes || node.edge_liked_by?.count || Math.floor(Math.random() * 50)
     };
   }
+
+  // Configurações recomendadas para backend profissional
+  public static getBackendRequirements() {
+    return {
+      bots: {
+        description: '🤖 Sistema de Bots Instagram',
+        requirements: [
+          'Mínimo 3-5 contas Instagram verificadas',
+          'Contas com histórico de atividade orgânica',
+          'Rotação automática entre contas (load balancing)',
+          'Sistema de health check para status das contas',
+          'Backup de contas em caso de bloqueio'
+        ],
+        implementation: [
+          'Usar bibliotecas como instagram-private-api (Node.js)',
+          'Implementar sistema de queue para requisições',
+          'Monitorar rate limits por conta',
+          'Sistema de cooldown entre ações'
+        ]
+      },
+      sessionManagement: {
+        description: '🔐 Gerenciamento de Sessão Seguro',
+        requirements: [
+          'Armazenamento seguro de cookies/tokens',
+          'Cache distribuído (Redis/Memcached)',
+          'Criptografia para dados sensíveis',
+          'Rotação automática de sessões',
+          'Backup de sessões válidas'
+        ],
+        implementation: [
+          'Redis para cache de sessões',
+          'Criptografia AES-256 para tokens',
+          'TTL automático para expiração',
+          'Cluster Redis para alta disponibilidade'
+        ]
+      },
+      scraping: {
+        description: '🕷️ Headless Scraping Profissional',
+        requirements: [
+          'Puppeteer/Playwright com pools de browsers',
+          'Proxy rotation (residencial preferível)',
+          'User-agent rotation e fingerprinting',
+          'Sistema anti-detecção avançado',
+          'Processamento assíncrono em background'
+        ],
+        implementation: [
+          'Docker containers para isolamento',
+          'Queue system (Bull/Agenda)',
+          'Rate limiting inteligente',
+          'Retry logic com backoff exponencial'
+        ]
+      },
+      infrastructure: {
+        description: '🏗️ Infraestrutura Recomendada',
+        requirements: [
+          'Servidores com IPs limpos',
+          'Load balancer para distribuição',
+          'Monitoring e logging avançado',
+          'Backup automático de dados',
+          'Escalabilidade horizontal'
+        ],
+        technologies: [
+          'AWS/GCP/Azure para hosting',
+          'Kubernetes para orquestração',
+          'Prometheus + Grafana para monitoring',
+          'ELK Stack para logs'
+        ]
+      }
+    };
+  }
 }
