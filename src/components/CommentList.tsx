@@ -2,7 +2,7 @@
 import React from 'react';
 import Comment from './Comment';
 import { MessageCircle } from 'lucide-react';
-import type { Comment as CommentType } from '@/pages/Index';
+import type { Comment as CommentType } from '@/types/comment';
 
 interface CommentListProps {
   comments: CommentType[];

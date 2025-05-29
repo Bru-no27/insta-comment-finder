@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { User, Clock, Heart } from 'lucide-react';
-import type { Comment as CommentType } from '@/pages/Index';
+import type { Comment as CommentType } from '@/types/comment';
 
 interface CommentProps {
   comment: CommentType;

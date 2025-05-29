@@ -6,20 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface SearchFormProps {
-  instagramUrl: string;
-  setInstagramUrl: (url: string) => void;
-  searchFilter: string;
-  setSearchFilter: (filter: string) => void;
-  onSearch: () => void;
+  instagramUrl?: string;
+  setInstagramUrl?: (url: string) => void;
+  searchFilter?: string;
+  setSearchFilter?: (filter: string) => void;
+  onSearch?: () => void;
   isLoading?: boolean;
 }
 
 const SearchForm = ({
-  instagramUrl,
-  setInstagramUrl,
-  searchFilter,
-  setSearchFilter,
-  onSearch,
+  instagramUrl = '',
+  setInstagramUrl = () => {},
+  searchFilter = '',
+  setSearchFilter = () => {},
+  onSearch = () => {},
   isLoading = false
 }: SearchFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
