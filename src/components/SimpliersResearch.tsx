@@ -286,7 +286,7 @@ const SimpliersResearch = () => {
                     </ul>
                   </div>
                   
-                  {config.implementation && (
+                  {'implementation' in config && config.implementation && (
                     <div>
                       <h4 className="font-semibold mb-2">🛠️ Implementação:</h4>
                       <ul className="space-y-1 text-sm">
@@ -300,7 +300,7 @@ const SimpliersResearch = () => {
                     </div>
                   )}
 
-                  {config.technologies && (
+                  {'technologies' in config && config.technologies && (
                     <div>
                       <h4 className="font-semibold mb-2">🔧 Tecnologias:</h4>
                       <ul className="space-y-1 text-sm">
