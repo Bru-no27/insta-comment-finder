@@ -1,8 +1,8 @@
 
 // Serviço para integração com API do Instagram
-// Sistema inteligente: APIs funcionais 2024 + Fallback ultra-realista
+// Sistema otimizado: API Principal (Instagram Scraper Stable) + Fallbacks realistas
 
-import { WORKING_APIS, BACKUP_APIS } from './instagram/workingApis';
+import { PRIMARY_API, BACKUP_APIS } from './instagram/config';
 import { extractPostId, getApiStatus } from './instagram/utils';
 import { processRealApiResponse } from './instagram/processor';
 import { RealisticDemoGenerator } from './instagram/demoDataGenerator';
@@ -12,7 +12,7 @@ import type { InstagramApiResponse } from './instagram/types';
 export { extractPostId, getApiStatus };
 export type { InstagramComment, InstagramApiResponse, ApiStatus } from './instagram/types';
 
-// Função principal para buscar comentários (APIs 2024 verificadas)
+// Função principal otimizada para a Instagram Scraper Stable API
 export const fetchInstagramComments = async (
   postUrl: string,
   filter?: string
@@ -28,13 +28,14 @@ export const fetchInstagramComments = async (
     };
   }
 
-  console.log('🔍 Buscando comentários REAIS para Post ID:', postId);
-  console.log('🎯 Filtro aplicado:', filter || 'Nenhum');
+  console.log('🚀 Iniciando busca com Instagram Scraper Stable API');
+  console.log('📝 Post ID extraído:', postId);
+  console.log('🔍 Filtro aplicado:', filter || 'Nenhum');
 
-  // Verifica configuração da API
+  // Verifica configuração da chave RapidAPI
   const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
   if (!rapidApiKey || rapidApiKey.trim() === '') {
-    console.log('⚠️ Chave RapidAPI não configurada');
+    console.log('⚠️ Chave RapidAPI não configurada - usando dados de demonstração');
     
     const demoComments = RealisticDemoGenerator.generateRealisticComments(30, filter);
     
@@ -45,25 +46,74 @@ export const fetchInstagramComments = async (
       message: `🎭 ${demoComments.length} comentários de demonstração ultra-realistas!
       
       💡 Para comentários REAIS:
-      1. 🔑 Configure sua chave RapidAPI
-      2. 🌐 Teste as APIs verificadas em 2024
-      3. 💰 Considere planos pagos para garantia de funcionamento
+      1. 🔑 Acesse: rapidapi.com/thetechguy32744/api/instagram-scraper-stable-api
+      2. 🆓 Inscreva-se no plano GRATUITO (500 requests/mês)
+      3. 📋 Copie sua chave X-RapidAPI-Key
+      4. ⚙️ Configure no arquivo .env: VITE_RAPIDAPI_KEY=sua_chave_aqui
       
-      🎯 Dados de demo são perfeitos para testes e desenvolvimento!`
+      🎯 Dados de demo são perfeitos para desenvolvimento e testes!`
     };
   }
 
-  // Tenta APIs verificadas que funcionam em 2024
-  const allApis = [...WORKING_APIS, ...BACKUP_APIS];
-  let lastError = '';
+  // Tenta API principal primeiro (Instagram Scraper Stable)
+  console.log(`🎯 Testando API PRINCIPAL: ${PRIMARY_API.name}`);
   
-  for (const apiConfig of allApis) {
+  try {
+    const endpoint = PRIMARY_API.endpoint(postId);
+    const url = `https://${PRIMARY_API.host}${endpoint}`;
+    console.log(`📡 URL da API principal: ${url}`);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Key': rapidApiKey,
+        'X-RapidAPI-Host': PRIMARY_API.host,
+        'Accept': 'application/json',
+        'User-Agent': 'InstagramCommentTool/2.0',
+        'Cache-Control': 'no-cache'
+      },
+      signal: AbortSignal.timeout(20000) // 20 segundos para a API principal
+    });
+
+    console.log(`📊 Instagram Scraper Stable API - Status: ${response.status}`);
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log('✅ Dados recebidos da API principal:', data);
+      
+      const realComments = processRealApiResponse(data, filter, PRIMARY_API.name);
+      
+      if (realComments.length > 0) {
+        return {
+          comments: realComments,
+          total: realComments.length,
+          status: 'success',
+          message: `🎉 ${realComments.length} comentários REAIS obtidos via ${PRIMARY_API.name}! ✅`
+        };
+      } else {
+        console.log('⚠️ API principal funcionou mas não retornou comentários');
+      }
+    } else {
+      const errorText = await response.text();
+      console.error(`❌ API principal - Erro ${response.status}:`, errorText);
+      
+      if (response.status === 403) {
+        console.log('🔑 Erro 403: Verifique se está inscrito na API ou se a chave está correta');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erro na API principal:', error);
+  }
+
+  // Tenta APIs backup se a principal falhou
+  console.log('🔄 Tentando APIs backup...');
+  
+  for (const apiConfig of BACKUP_APIS) {
     try {
-      console.log(`🚀 Testando API verificada: ${apiConfig.name}`);
+      console.log(`🚀 Testando API backup: ${apiConfig.name}`);
       
       const endpoint = apiConfig.endpoint(postId);
       const url = `https://${apiConfig.host}${endpoint}`;
-      console.log(`📡 URL: ${url}`);
       
       const response = await fetch(url, {
         method: 'GET',
@@ -71,17 +121,13 @@ export const fetchInstagramComments = async (
           'X-RapidAPI-Key': rapidApiKey,
           'X-RapidAPI-Host': apiConfig.host,
           'Accept': 'application/json',
-          'User-Agent': 'InstagramCommentTool/1.0',
+          'User-Agent': 'InstagramCommentTool/2.0',
         },
-        signal: AbortSignal.timeout(15000) // 15 segundos timeout
+        signal: AbortSignal.timeout(15000)
       });
-
-      console.log(`📊 ${apiConfig.name} - Status: ${response.status}`);
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ ${apiConfig.name} - Dados recebidos:`, data);
-        
         const realComments = processRealApiResponse(data, filter, apiConfig.name);
         
         if (realComments.length > 0) {
@@ -89,35 +135,20 @@ export const fetchInstagramComments = async (
             comments: realComments,
             total: realComments.length,
             status: 'success',
-            message: `🎉 ${realComments.length} comentários REAIS obtidos via ${apiConfig.name}!`
+            message: `🎉 ${realComments.length} comentários REAIS obtidos via ${apiConfig.name} (backup)!`
           };
-        } else {
-          console.log(`⚠️ ${apiConfig.name} - Post encontrado mas sem comentários públicos`);
-          lastError = 'Post encontrado mas sem comentários públicos disponíveis';
-        }
-      } else {
-        const errorText = await response.text();
-        console.error(`❌ ${apiConfig.name} - Erro ${response.status}:`, errorText);
-        
-        if (response.status === 403) {
-          lastError = `${apiConfig.name}: Precisa se inscrever na API (erro 403)`;
-        } else if (response.status === 404) {
-          lastError = `${apiConfig.name}: API não encontrada ou post inexistente`;
-        } else {
-          lastError = `${apiConfig.name}: Erro ${response.status}`;
         }
       }
     } catch (error) {
-      console.error(`❌ ${apiConfig.name} - Erro de conexão:`, error);
-      lastError = `${apiConfig.name}: Erro de conexão ou timeout`;
+      console.error(`❌ Erro com API backup ${apiConfig.name}:`, error);
     }
 
-    // Pequeno delay entre tentativas
+    // Delay entre tentativas
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
-  // Se chegou aqui, nenhuma API funcionou
-  console.log('🎭 Usando dados de demonstração como fallback');
+  // Se todas as APIs falharam, usa dados de demonstração
+  console.log('🎭 Todas as APIs falharam - usando dados de demonstração realistas');
   
   const demoComments = RealisticDemoGenerator.generateRealisticComments(35, filter);
   
@@ -127,16 +158,15 @@ export const fetchInstagramComments = async (
     status: 'success',
     message: `🎭 ${demoComments.length} comentários de demonstração (APIs indisponíveis)
     
-    ❌ Problemas encontrados:
-    • ${lastError}
-    • Instagram mudou políticas recentemente
-    • APIs gratuitas têm limitações
+    ❌ Status das APIs:
+    • Instagram Scraper Stable API: Verificar configuração da chave
+    • APIs backup: Indisponíveis ou exigem inscrição paga
     
-    💡 Soluções recomendadas:
-    1. 🔍 Procure por "Instagram Scraper" no RapidAPI e teste APIs mais recentes
-    2. 💰 Considere APIs pagas que garantem funcionamento  
-    3. 🤝 Para uso comercial, considere parcerias com empresas especializadas
+    💡 Soluções GARANTIDAS:
+    1. 🔑 Configure a chave RapidAPI corretamente
+    2. 🆓 Confirme inscrição no plano gratuito da API principal
+    3. 💰 Para uso intensivo, considere planos pagos
     
-    🎯 Os dados de demonstração são muito realistas para testes!`
+    🎯 Os dados de demonstração são muito realistas para desenvolvimento!`
   };
 };
