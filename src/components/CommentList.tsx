@@ -27,12 +27,16 @@ const CommentList = ({ comments, searchFilter }: CommentListProps) => {
 
   return (
     <div className="space-y-4">
-      {comments.map((comment) => (
-        <Comment 
-          key={comment.id} 
-          comment={comment} 
-          searchFilter={searchFilter}
-        />
+      {comments.map((comment, index) => (
+        <div key={comment.id} className="relative">
+          <div className="absolute -left-2 top-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center z-10">
+            {index + 1}
+          </div>
+          <Comment 
+            comment={comment} 
+            searchFilter={searchFilter}
+          />
+        </div>
       ))}
     </div>
   );
