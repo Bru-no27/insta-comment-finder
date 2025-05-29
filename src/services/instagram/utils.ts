@@ -1,5 +1,5 @@
 
-import { PREMIUM_APIS } from './config';
+import { PRIMARY_API, BACKUP_APIS } from './config';
 import type { ApiStatus } from './types';
 
 // Função para extrair ID da publicação do URL
@@ -24,15 +24,16 @@ export const getApiStatus = (): ApiStatus => {
   const rapidApiKey = import.meta.env.VITE_RAPIDAPI_KEY;
   const isKeyConfigured = Boolean(rapidApiKey && rapidApiKey.trim() !== '');
   
-  const configuredApis = PREMIUM_APIS.filter(api => 
+  const allApis = [PRIMARY_API, ...BACKUP_APIS];
+  const configuredApis = allApis.filter(api => 
     isKeyConfigured && api.active
   );
   
   return {
-    totalApis: PREMIUM_APIS.length,
+    totalApis: allApis.length,
     configuredApis: configuredApis.length,
     isConfigured: isKeyConfigured,
-    availableApis: PREMIUM_APIS.map(api => ({
+    availableApis: allApis.map(api => ({
       name: api.name,
       price: api.price,
       features: api.features,
