@@ -3,7 +3,8 @@ import SearchForm from '@/components/SearchForm';
 import CommentList from '@/components/CommentList';
 import AdvancedResearch from '@/components/AdvancedResearch';
 import ApiConfiguration from '@/components/ApiConfiguration';
-import { Instagram, AlertCircle, CheckCircle, CreditCard, Zap, Microscope, Settings } from 'lucide-react';
+import SimpliersResearch from '@/components/SimpliersResearch';
+import { Instagram, AlertCircle, CheckCircle, CreditCard, Zap, Microscope, Settings, Beaker } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { fetchInstagramComments, getApiStatus } from '@/services/instagramApi';
 
@@ -26,6 +27,7 @@ const Index = () => {
   const [isRealData, setIsRealData] = useState(false);
   const [showAdvancedResearch, setShowAdvancedResearch] = useState(false);
   const [showApiConfig, setShowApiConfig] = useState(false);
+  const [showSimpliersResearch, setShowSimpliersResearch] = useState(false);
   const { toast } = useToast();
 
   const apiConfigStatus = getApiStatus();
@@ -103,6 +105,7 @@ const Index = () => {
   const resetToNormalMode = () => {
     setShowAdvancedResearch(false);
     setShowApiConfig(false);
+    setShowSimpliersResearch(false);
   };
 
   return (
@@ -132,6 +135,7 @@ const Index = () => {
                 onClick={() => {
                   setShowApiConfig(!showApiConfig);
                   setShowAdvancedResearch(false);
+                  setShowSimpliersResearch(false);
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                   showApiConfig 
@@ -140,13 +144,14 @@ const Index = () => {
                 }`}
               >
                 <Settings className="h-4 w-4" />
-                Configurar APIs
+                APIs
               </button>
               
               <button
                 onClick={() => {
                   setShowAdvancedResearch(!showAdvancedResearch);
                   setShowApiConfig(false);
+                  setShowSimpliersResearch(false);
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
                   showAdvancedResearch 
@@ -155,16 +160,32 @@ const Index = () => {
                 }`}
               >
                 <Microscope className="h-4 w-4" />
-                Pesquisa Avançada
+                Pesquisa
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowSimpliersResearch(!showSimpliersResearch);
+                  setShowApiConfig(false);
+                  setShowAdvancedResearch(false);
+                }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  showSimpliersResearch 
+                    ? 'bg-green-100 border-green-300 text-green-700' 
+                    : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <Beaker className="h-4 w-4" />
+                Simpliers Lab
               </button>
               
-              {(showApiConfig || showAdvancedResearch) && (
+              {(showApiConfig || showAdvancedResearch || showSimpliersResearch) && (
                 <button
                   onClick={resetToNormalMode}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 border-green-300 text-green-700 hover:bg-green-200 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200 transition-colors"
                 >
                   <Instagram className="h-4 w-4" />
-                  Busca Normal
+                  Normal
                 </button>
               )}
             </div>
@@ -189,6 +210,22 @@ const Index = () => {
             </div>
             
             <ApiConfiguration />
+          </div>
+        ) : showSimpliersResearch ? (
+          /* Simpliers Research Mode */
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <Beaker className="h-6 w-6 text-green-600" />
+                <h2 className="text-xl font-bold text-green-900">🧪 Laboratório Simpliers</h2>
+              </div>
+              <p className="text-green-800">
+                Análise técnica das metodologias identificadas no Simpliers para coleta de comentários do Instagram. 
+                <strong> Apenas para fins educacionais!</strong>
+              </p>
+            </div>
+            
+            <SimpliersResearch />
           </div>
         ) : showAdvancedResearch ? (
           /* Advanced Research Mode */
@@ -304,8 +341,30 @@ const Index = () => {
 
             {/* Info Section */}
             {!isSearched && !isLoading && (
-              // ... keep existing code (info sections)
               <div className="space-y-6">
+                {/* New Simpliers Lab Promotion */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Beaker className="h-6 w-6 text-green-600" />
+                    <h3 className="text-lg font-semibold text-green-900">🧪 NOVO: Laboratório Simpliers</h3>
+                  </div>
+                  <div className="space-y-3 text-green-800">
+                    <p>Análise técnica das metodologias do Simpliers para coleta de comentários:</p>
+                    <div className="bg-white/50 rounded-lg p-4 text-sm">
+                      <p>• Simulação de Puppeteer/Playwright</p>
+                      <p>• Advanced HTTP Scraping</p>
+                      <p>• CloudFlare Bypass Techniques</p>
+                      <p>• Sistema de anti-detecção</p>
+                    </div>
+                    <button
+                      onClick={() => setShowSimpliersResearch(true)}
+                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Explorar Laboratório Simpliers
+                    </button>
+                  </div>
+                </div>
+
                 {/* Quick API Setup */}
                 {!apiConfigStatus.isConfigured && (
                   <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-6">
@@ -334,7 +393,7 @@ const Index = () => {
                 <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <Microscope className="h-6 w-6 text-purple-600" />
-                    <h3 className="text-lg font-semibold text-purple-900">🔬 Novo: Pesquisa Avançada</h3>
+                    <h3 className="text-lg font-semibold text-purple-900">🔬 Pesquisa Avançada</h3>
                   </div>
                   <div className="space-y-3 text-purple-800">
                     <p>Explore técnicas avançadas de scraping identificadas através da análise do StoriesIG.info:</p>
@@ -395,7 +454,7 @@ const Index = () => {
       <footer className="bg-white border-t mt-16">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <p className="text-center text-gray-600 text-sm">
-            Sistema Híbrido: APIs Reais + Demonstração + Pesquisa Avançada
+            Sistema Híbrido: APIs Reais + Demonstração + Pesquisa Avançada + Laboratório Simpliers
           </p>
         </div>
       </footer>
