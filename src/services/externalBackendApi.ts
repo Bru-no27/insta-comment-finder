@@ -1,3 +1,4 @@
+
 export interface ExternalBackendComment {
   id: string;
   username: string;
@@ -24,11 +25,13 @@ class ExternalBackendApi {
   private baseUrl: string;
 
   constructor() {
-    // URL do seu backend no Render
-    this.baseUrl = 'https://insta-comment-finder.onrender.com';
+    // URL do seu backend no Railway - ATUALIZE com sua URL real
+    this.baseUrl = 'https://instagram-scraper-backend-production-5c9b.up.railway.app';
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
+    console.log(`🚀 Fazendo requisição para: ${this.baseUrl}/api/instagram-comments`);
+    
     const response = await fetch(`${this.baseUrl}/api/instagram-comments`, {
       method: 'POST',
       headers: {
@@ -56,6 +59,7 @@ class ExternalBackendApi {
 
   setBackendUrl(url: string): void {
     this.baseUrl = url;
+    console.log(`🔧 URL do backend atualizada para: ${url}`);
   }
 }
 
