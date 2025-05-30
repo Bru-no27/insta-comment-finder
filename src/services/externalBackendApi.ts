@@ -25,8 +25,9 @@ class ExternalBackendApi {
   private baseUrl: string;
 
   constructor() {
-    // URL do seu backend no Railway - URL REAL CONFIGURADA
+    // URL do backend no Railway - configurada corretamente
     this.baseUrl = 'https://insta-comment-finder-production.up.railway.app';
+    console.log('🔧 Backend URL configurada:', this.baseUrl);
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
@@ -96,7 +97,7 @@ class ExternalBackendApi {
         }
         
         if (response.status === 403 || response.status === 405) {
-          throw new Error(`Erro de CORS ou método não permitido (${response.status}). Verifique a configuração CORS_ORIGINS no backend.`);
+          throw new Error(`Erro de CORS ou método não permitido (${response.status}). Verifique se as variáveis CORS_ORIGINS estão configuradas no Railway.`);
         }
         
         let errorData;
@@ -126,26 +127,27 @@ class ExternalBackendApi {
         if (networkError.message.includes('fetch')) {
           throw new Error(`❌ ERRO DE CONECTIVIDADE:
           
-🔗 Tentando conectar em: ${this.baseUrl}
-🌐 Origem da requisição: ${window.location.origin}
+🔗 Backend: ${this.baseUrl}
+🌐 Frontend: ${window.location.origin}
 
-Possíveis causas:
-1. 🚫 CORS não configurado corretamente
-2. 🔌 Backend offline ou inacessível  
-3. 🌐 Problema de rede/firewall
-4. ⚙️ Configuração incorreta no Railway
+✅ Próximos passos para resolver:
+1. Acesse o painel do Railway: railway.app
+2. Entre no projeto: insta-comment-finder-production
+3. Vá em "Variables" e confirme que CORS_ORIGINS está configurado com:
+   ${window.location.origin}
+4. Se necessário, force um redeploy do backend
 
-Próximos passos:
-1. Acesse ${this.baseUrl} no navegador
-2. Configure CORS_ORIGINS no Railway com: ${window.location.origin}
-3. Verifique se o backend está online nos logs do Railway`);
+📌 Variáveis necessárias no Railway:
+- CORS_ORIGINS=${window.location.origin}
+- BOT_USERNAME=sua_conta_bot
+- BOT_PASSWORD=sua_senha_bot`);
         }
         
         if (networkError.message.includes('CORS')) {
           throw new Error(`❌ ERRO DE CORS:
           
 Configure no Railway a variável:
-CORS_ORIGINS=${window.location.origin},http://localhost:5173`);
+CORS_ORIGINS=${window.location.origin}`);
         }
       }
       
