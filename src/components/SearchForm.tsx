@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Search, Instagram, Filter, Hash, User, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -188,19 +187,18 @@ const SearchForm = ({
 
       <Button
         type="submit"
-        className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base transition-colors duration-200 flex items-center gap-2"
+        className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium text-base transition-colors duration-200 flex items-center justify-center gap-2"
         disabled={!instagramUrl.trim() || isLoading}
       >
-        {isLoading ? (
-          <>
+        <span className={`flex items-center gap-2 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
+          <Search className="h-5 w-5" />
+          Buscar Comentários
+        </span>
+        {isLoading && (
+          <span className="absolute flex items-center gap-2">
             <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
             Carregando...
-          </>
-        ) : (
-          <>
-            <Search className="h-5 w-5" />
-            Buscar Comentários
-          </>
+          </span>
         )}
       </Button>
     </form>
