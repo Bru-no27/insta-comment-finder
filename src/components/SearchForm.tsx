@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Instagram, Filter, Loader2, Hash, User, Calendar } from 'lucide-react';
+import { Search, Instagram, Filter, Hash, User, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -193,7 +193,7 @@ const SearchForm = ({
       >
         {isLoading ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
             Carregando...
           </>
         ) : (
