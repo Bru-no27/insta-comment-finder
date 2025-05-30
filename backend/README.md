@@ -1,137 +1,228 @@
 
-# Backend Instagram Scraper - Puppeteer Real
+# 🚀 Instagram Comment Finder - Backend
 
 Backend Node.js com Puppeteer para scraping **REAL** de comentários do Instagram usando conta-bot.
 
-## 🚀 Instalação e Configuração
+## 📋 Funcionalidades
 
-### 1. Preparar o Ambiente
+- ✅ **API REST** completa com Express.js
+- ✅ **Scraping real** de comentários via Puppeteer
+- ✅ **Anti-detecção** com puppeteer-extra-plugin-stealth
+- ✅ **Rate limiting** para proteger contra abuse
+- ✅ **CORS configurado** para frontend
+- ✅ **Deploy automático** no Railway/Render
 
+## 🚀 Deploy Rápido
+
+### Railway (Recomendado)
+
+1. **Conecte o repositório:**
+   ```bash
+   # No Railway Dashboard
+   - New Project → Deploy from GitHub
+   - Selecione seu repositório
+   ```
+
+2. **Configure variáveis de ambiente:**
+   ```env
+   BOT_USERNAME=sua_conta_instagram_bot
+   BOT_PASSWORD=sua_senha_bot
+   NODE_ENV=production
+   RATE_LIMIT_MAX_REQUESTS=10
+   RATE_LIMIT_WINDOW=900000
+   MAX_COMMENTS=100
+   SCROLL_DELAY=2000
+   CORS_ORIGINS=https://seuapp.lovableproject.com
+   ```
+
+3. **Deploy automático:**
+   - Railway detecta automaticamente que é Node.js
+   - Executa `npm install` e `npm start`
+   - Gera URL única: `https://seuapp.up.railway.app`
+
+### Render (Alternativa)
+
+1. **Conecte repositório no Render**
+2. **Configure:**
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+   - Environment: `Node`
+3. **Adicione as mesmas variáveis de ambiente**
+
+## 🏃‍♂️ Rodar Localmente
+
+### 1. Instalar dependências
 ```bash
-# Criar diretório do backend
-mkdir backend
 cd backend
-
-# Copiar os arquivos deste projeto para a pasta backend/
-
-# Instalar dependências
 npm install
 ```
 
-### 2. Configurar Variáveis de Ambiente
+### 2. Configurar ambiente
+```bash
+# Criar arquivo .env
+cp .env.example .env
 
-Edite o arquivo `.env` com suas credenciais:
-
-```env
-# Conta Instagram dedicada para bot
+# Editar com suas credenciais
 BOT_USERNAME=sua_conta_bot
 BOT_PASSWORD=sua_senha_bot
-
-# Configurações do servidor
 PORT=3001
 NODE_ENV=development
 ```
 
-### 3. Testar o Scraper
-
+### 3. Iniciar servidor
 ```bash
-# Teste isolado (com navegador visível)
-npm run test
-
-# Ou executar o servidor
+# Desenvolvimento (com auto-reload)
 npm run dev
+
+# Produção
+npm start
 ```
 
-## 🔧 Como Usar
-
-### Via Frontend (Recomendado)
-1. Inicie o backend: `npm run dev`
-2. Use a interface web no frontend
-3. Cole uma URL de post do Instagram
-4. Clique em "Testar Scraping"
-
-### Via cURL (Debug)
+### 4. Testar API
 ```bash
-curl -X POST http://localhost:3001/api/test-comments \
-  -H "Content-Type: application/json" \
-  -d '{
-    "postUrl": "https://www.instagram.com/p/CODIGO_DO_POST/"
-  }'
+# Verificar se está funcionando
+curl http://localhost:3001/
+
+# Resposta esperada:
+{
+  "status": "API running",
+  "service": "Instagram Comment Finder",
+  "version": "1.0.0"
+}
 ```
 
-## 📋 Funcionalidades
+## 🔧 Endpoints da API
 
-### ✅ O que funciona:
-- **Login automático** com conta-bot
-- **Scraping real** de comentários via Puppeteer
-- **Anti-detecção** com puppeteer-extra-plugin-stealth
-- **Rate limiting** para proteger contra abuse
-- **Sessão persistente** (evita re-logins desnecessários)
-- **Scroll automático** para carregar mais comentários
-- **Extração completa** de username, texto, timestamp, likes
+### `GET /`
+**Descrição:** Status da API  
+**Resposta:** Informações básicas do serviço
 
-### 🔒 Recursos de Segurança:
-- Headers de navegador real
-- Delays humanizados
-- Rate limiting por IP
-- Validação de entrada
-- CORS configurado
-- Helmet para segurança
+### `GET /api/health`
+**Descrição:** Health check detalhado  
+**Resposta:** Status do sistema, uptime, memória
 
-## 🛠 Arquitetura
-
-```
-backend/
-├── .env                     # Configurações
-├── server.js               # Servidor Express
-├── package.json            # Dependências
-├── test-scraper.js         # Teste isolado
-└── scrapers/
-    └── InstagramScraper.js # Classe principal
+### `POST /api/instagram-comments`
+**Descrição:** Extrair comentários de post do Instagram  
+**Body:**
+```json
+{
+  "postUrl": "https://www.instagram.com/p/CODIGO_DO_POST/"
+}
 ```
 
-## 🐛 Troubleshooting
-
-### Erro de Login:
-- Verifique se a conta está ativa
-- Teste login manual no navegador
-- Verifique se não há 2FA ativo
-- Use conta dedicada (não sua conta principal)
-
-### Comentários não aparecem:
-- Verifique se o post é público
-- Aguarde mais tempo para carregamento
-- Teste com posts que têm muitos comentários
-
-### Performance:
-- Execute em `NODE_ENV=production` para headless
-- Use `headless: false` apenas para debug
-- Monitore uso de RAM com muitos requests
-
-## ⚠️ Importante
-
-- **Use conta dedicada** para bot (não sua conta principal)
-- **Respeite rate limits** do Instagram
-- **Monitore logs** para detectar problemas
-- **Teste regularmente** pois Instagram muda estrutura
-
-## 📊 Logs Detalhados
-
-O sistema gera logs completos:
+**Resposta de sucesso:**
+```json
+{
+  "status": "success",
+  "comments": [
+    {
+      "id": "comment_1",
+      "username": "usuario1",
+      "text": "Que legal!",
+      "timestamp": "2024-01-01T10:00:00Z",
+      "likes": 5
+    }
+  ],
+  "totalFound": 1,
+  "message": "✅ 1 comentários extraídos com sucesso!"
+}
 ```
+
+## ⚙️ Variáveis de Ambiente
+
+| Variável | Obrigatória | Padrão | Descrição |
+|----------|------------|--------|-----------|
+| `BOT_USERNAME` | ✅ | - | Username da conta Instagram bot |
+| `BOT_PASSWORD` | ✅ | - | Senha da conta Instagram bot |
+| `PORT` | ❌ | 3001 | Porta do servidor |
+| `NODE_ENV` | ❌ | development | Ambiente (development/production) |
+| `RATE_LIMIT_MAX_REQUESTS` | ❌ | 10 | Máximo de requests por janela |
+| `RATE_LIMIT_WINDOW` | ❌ | 900000 | Janela de rate limit (ms) |
+| `MAX_COMMENTS` | ❌ | 100 | Máximo de comentários por request |
+| `SCROLL_DELAY` | ❌ | 2000 | Delay entre scrolls (ms) |
+| `CORS_ORIGINS` | ❌ | localhost | Origins permitidos (separados por vírgula) |
+
+## 🔒 Segurança
+
+### Conta Bot Instagram
+- ✅ Use uma conta dedicada (não sua conta principal)
+- ✅ Deixe o perfil público
+- ✅ Adicione algumas fotos e seguidores para parecer real
+- ⚠️ Não use 2FA (Two-Factor Authentication)
+
+### Rate Limiting
+- 10 requests por 15 minutos por IP (padrão)
+- Configurável via variáveis de ambiente
+- Headers de retry incluídos nas respostas
+
+## 🛠️ Troubleshooting
+
+### ❌ Erro de Login
+```
+Credenciais do bot não configuradas
+```
+**Solução:** Verifique se `BOT_USERNAME` e `BOT_PASSWORD` estão configurados
+
+### ❌ Erro de CORS
+```
+Not allowed by CORS
+```
+**Solução:** Adicione sua URL frontend em `CORS_ORIGINS`
+
+### ❌ Rate Limit
+```
+Muitas requisições
+```
+**Solução:** Aguarde o tempo indicado no header `Retry-After`
+
+### ❌ Scraping falha
+```
+Erro ao extrair comentários
+```
+**Possíveis causas:**
+- Post privado ou inexistente
+- Instagram bloqueou a conta bot temporariamente
+- Delay muito baixo (aumente `SCROLL_DELAY`)
+
+## 📊 Monitoramento
+
+### Logs importantes:
+```bash
 🚀 Servidor rodando em http://localhost:3001
-🌐 Inicializando navegador...
-🔐 Fazendo login no Instagram...
-📱 Navegando para o post...
-⬇️ Rolando para carregar comentários...
-🔍 Extraindo comentários...
+🤖 Instagram Scraper inicializado
+📱 Nova requisição de scraping recebida
 ✅ 45 comentários extraídos
 ```
 
-## 🔄 Próximos Passos
+### Metrics endpoint:
+```bash
+curl https://seuapp.up.railway.app/api/health
+```
 
-1. **Configure sua conta-bot** no `.env`
-2. **Teste com posts públicos** primeiro
-3. **Monitore performance** e ajuste delays
-4. **Implemente cache** se necessário
-5. **Configure proxy** para scale (opcional)
+## 🚀 Integração com Frontend
+
+No seu app Lovable, configure a URL do backend:
+
+```typescript
+// src/services/externalBackendApi.ts
+const baseUrl = 'https://seuapp.up.railway.app';
+```
+
+## 📝 Próximos Passos
+
+1. ✅ **Deploy funcionando** - API responde em `/`
+2. ✅ **Configurar bot** - Adicionar credenciais do Instagram
+3. ✅ **Testar scraping** - Usar endpoint `/api/instagram-comments`
+4. ✅ **Monitorar logs** - Verificar se tudo está funcionando
+5. ✅ **Conectar frontend** - Atualizar URL da API
+
+## 💰 Custos
+
+- **Railway:** Plano gratuito com 500h/mês
+- **Render:** Plano gratuito com sleep após inatividade
+
+Para uso intenso, considere planos pagos.
+
+---
+
+**🎯 Pronto para usar!** Depois do deploy, teste com `GET /` e configure as credenciais do bot.

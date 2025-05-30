@@ -21,7 +21,7 @@ const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = process.env.CORS_ORIGINS ? 
       process.env.CORS_ORIGINS.split(',') : 
-      ['http://localhost:5173'];
+      ['http://localhost:5173', 'https://lovable.dev'];
     
     // Allow requests with no origin (mobile apps, etc.)
     if (!origin) return callback(null, true);
@@ -67,7 +67,8 @@ let scraper = null;
 async function initializeScraper() {
   try {
     if (!process.env.BOT_USERNAME || !process.env.BOT_PASSWORD) {
-      throw new Error('Credenciais do bot não configuradas');
+      console.log('⚠️ Credenciais do bot não configuradas - funcionalidade limitada');
+      return false;
     }
 
     scraper = new InstagramScraper({
@@ -79,10 +80,28 @@ async function initializeScraper() {
     });
     
     console.log('🤖 Instagram Scraper inicializado');
+    return true;
   } catch (error) {
     console.error('❌ Erro ao inicializar scraper:', error.message);
+    return false;
   }
 }
+
+// Root route - API status
+app.get('/', (req, res) => {
+  res.json({
+    status: 'API running',
+    service: 'Instagram Comment Finder',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    scraper: scraper ? 'initialized' : 'not_initialized',
+    endpoints: {
+      health: '/api/health',
+      comments: '/api/instagram-comments (POST)'
+    }
+  });
+});
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -90,7 +109,9 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    scraper: scraper ? 'initialized' : 'not_initialized'
+    scraper: scraper ? 'initialized' : 'not_initialized',
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
   });
 });
 
@@ -120,15 +141,18 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
 
   if (!scraper) {
     console.log('🔄 Inicializando scraper...');
-    await initializeScraper();
-  }
-
-  if (!scraper) {
-    return res.status(500).json({
-      status: 'error',
-      error: 'Scraper não disponível',
-      message: 'Sistema temporariamente indisponível. Tente novamente em alguns minutos.'
-    });
+    const initialized = await initializeScraper();
+    if (!initialized) {
+      return res.status(500).json({
+        status: 'error',
+        error: 'Scraper não disponível',
+        message: 'Credenciais do bot não configuradas. Configure BOT_USERNAME e BOT_PASSWORD.',
+        debug: {
+          BOT_USERNAME: process.env.BOT_USERNAME ? 'configured' : 'missing',
+          BOT_PASSWORD: process.env.BOT_PASSWORD ? 'configured' : 'missing'
+        }
+      });
+    }
   }
 
   try {
@@ -166,6 +190,30 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   }
 });
 
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    status: 'error',
+    error: 'Endpoint não encontrado',
+    message: 'Verifique a documentação da API',
+    availableEndpoints: [
+      'GET /',
+      'GET /api/health',
+      'POST /api/instagram-comments'
+    ]
+  });
+});
+
+// Error handler
+app.use((error, req, res, next) => {
+  console.error('❌ Erro não tratado:', error);
+  res.status(500).json({
+    status: 'error',
+    error: 'Erro interno do servidor',
+    message: 'Algo deu errado. Tente novamente.'
+  });
+});
+
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('🛑 Encerrando servidor...');
@@ -186,9 +234,12 @@ process.on('SIGTERM', async () => {
 // Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log(`🌍 Ambiente: ${process.env.NODE_ENV}`);
+  console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 10} req/${(process.env.RATE_LIMIT_WINDOW || 900) / 60}min`);
   
   // Initialize scraper on startup
   await initializeScraper();
+  
+  console.log('✅ API pronta para receber requisições');
+  console.log(`📍 Teste: GET ${PORT === 80 || PORT === 443 ? '' : ':' + PORT}/`);
 });
