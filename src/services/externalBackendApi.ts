@@ -25,8 +25,8 @@ class ExternalBackendApi {
   private baseUrl: string;
 
   constructor() {
-    // Configure your backend URL here after deploying to Railway/Render
-    this.baseUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+    // URL do seu backend no Render
+    this.baseUrl = 'https://insta-comment-finder-1.onrender.com';
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
