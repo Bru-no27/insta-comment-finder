@@ -25,8 +25,8 @@ class ExternalBackendApi {
   private baseUrl: string;
 
   constructor() {
-    // URL do seu backend no Railway - ATUALIZE com sua URL real
-    this.baseUrl = 'https://instagram-scraper-backend-production-5c9b.up.railway.app';
+    // URL do seu backend no Railway - URL REAL CONFIGURADA
+    this.baseUrl = 'https://insta-comment-finder-production.up.railway.app';
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
