@@ -30,27 +30,64 @@ class ExternalBackendApi {
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
-    console.log(`🚀 Fazendo requisição para: ${this.baseUrl}/api/instagram-comments`);
+    const fullUrl = `${this.baseUrl}/api/instagram-comments`;
+    console.log(`🚀 REQUISIÇÃO: ${fullUrl}`);
+    console.log(`📱 POST URL: ${postUrl}`);
     
-    const response = await fetch(`${this.baseUrl}/api/instagram-comments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ postUrl }),
-    });
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postUrl }),
+      });
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        const data = await response.json();
-        throw new Error(`Muitas requisições. Tente novamente em ${data.retryAfter || 15} minutos.`);
+      console.log(`📊 RESPONSE STATUS: ${response.status}`);
+      console.log(`📊 RESPONSE OK: ${response.ok}`);
+      console.log(`📊 RESPONSE HEADERS:`, response.headers);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ ERRO HTTP ${response.status}:`, errorText);
+        
+        if (response.status === 429) {
+          let data;
+          try {
+            data = JSON.parse(errorText);
+          } catch {
+            data = {};
+          }
+          throw new Error(`Muitas requisições. Tente novamente em ${data.retryAfter || 15} minutos.`);
+        }
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText || 'Erro desconhecido no servidor' };
+        }
+        
+        throw new Error(errorData.message || `Erro HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(`✅ DADOS RECEBIDOS:`, data);
+      return data;
+
+    } catch (networkError) {
+      console.error(`❌ ERRO DE REDE:`, {
+        name: networkError.name,
+        message: networkError.message,
+        stack: networkError.stack
+      });
+      
+      if (networkError.name === 'TypeError' && networkError.message.includes('fetch')) {
+        throw new Error(`Erro de conexão: Não foi possível conectar ao servidor ${this.baseUrl}. Verifique se o backend está funcionando.`);
       }
       
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Erro ao conectar com o servidor');
+      throw networkError;
     }
-
-    return response.json();
   }
 
   getBackendUrl(): string {

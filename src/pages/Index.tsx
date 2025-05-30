@@ -62,10 +62,13 @@ const Index = () => {
     setSearchMessage('');
 
     try {
-      console.log('🚀 Enviando requisição para o backend...');
+      console.log('🚀 TESTE: Enviando requisição para o backend...');
+      console.log('🔗 URL do backend:', externalBackendApi.getBackendUrl());
+      console.log('📱 Post URL:', instagramUrl);
+      
       const response = await externalBackendApi.fetchInstagramComments(instagramUrl);
       
-      console.log('📡 Resposta recebida:', response);
+      console.log('📡 SUCESSO: Resposta recebida:', response);
       
       // Aplicar filtros e ordenação
       const processedComments = applyFiltersAndSort(response.comments);
@@ -96,10 +99,30 @@ const Index = () => {
         });
       }
     } catch (error) {
-      console.error('❌ Erro na busca:', error);
+      console.error('❌ ERRO DETALHADO:', {
+        error,
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        stack: error instanceof Error ? error.stack : undefined,
+        backendUrl: externalBackendApi.getBackendUrl()
+      });
+      
+      let errorMessage = 'Não foi possível buscar os comentários';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = `Erro de conexão com o servidor. Verifique se o backend está funcionando: ${externalBackendApi.getBackendUrl()}`;
+        } else if (error.message.includes('CORS')) {
+          errorMessage = 'Erro de CORS - domínio não autorizado no backend';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setSearchMessage(`❌ Erro: ${errorMessage}`);
+      
       toast({
         title: "Erro na busca",
-        description: error instanceof Error ? error.message : "Não foi possível buscar os comentários",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
