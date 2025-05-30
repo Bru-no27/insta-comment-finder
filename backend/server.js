@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -16,25 +15,43 @@ const rateLimiter = new RateLimiterMemory({
   duration: parseInt(process.env.RATE_LIMIT_WINDOW) || 900,
 });
 
-// CORS configuration for production
+// CORS configuration for production - ATUALIZADO
 const corsOptions = {
   origin: function (origin, callback) {
+    // Lista de origens permitidas - incluindo o domínio da Lovable
     const allowedOrigins = process.env.CORS_ORIGINS ? 
-      process.env.CORS_ORIGINS.split(',') : 
-      ['http://localhost:5173', 'https://lovable.dev'];
+      process.env.CORS_ORIGINS.split(',').map(url => url.trim()) : 
+      [
+        'https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com',
+        'http://localhost:5173', 
+        'https://lovable.dev'
+      ];
+    
+    console.log('🌐 CORS Check:', {
+      requestOrigin: origin,
+      allowedOrigins: allowedOrigins,
+      corsOriginsEnv: process.env.CORS_ORIGINS
+    });
     
     // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✅ Allowing request with no origin');
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ Origin allowed:', origin);
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log('❌ Origin not allowed:', origin);
+      console.log('📋 Allowed origins:', allowedOrigins);
+      callback(new Error(`CORS: Origin ${origin} not allowed. Configure CORS_ORIGINS variable.`));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
+  optionsSuccessStatus: 200
 };
 
 // Middleware
@@ -87,7 +104,7 @@ async function initializeScraper() {
   }
 }
 
-// Root route - API status with detailed information
+// Root route - API status with detailed information - MELHORADO
 app.get('/', (req, res) => {
   const status = {
     status: '✅ API FUNCIONANDO',
@@ -96,10 +113,16 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     scraper: scraper ? '✅ Inicializado' : '⚠️ Não inicializado',
+    cors: {
+      configured: process.env.CORS_ORIGINS ? '✅ Configurado' : '⚠️ Usando padrão',
+      origins: process.env.CORS_ORIGINS ? 
+        process.env.CORS_ORIGINS.split(',').map(url => url.trim()) : 
+        ['https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com', 'http://localhost:5173'],
+      requestOrigin: req.get('Origin') || 'No origin header'
+    },
     configuration: {
       botUsername: process.env.BOT_USERNAME ? '✅ Configurado' : '❌ Faltando',
       botPassword: process.env.BOT_PASSWORD ? '✅ Configurado' : '❌ Faltando',
-      corsOrigins: process.env.CORS_ORIGINS ? '✅ Configurado' : '⚠️ Usando padrão',
       maxComments: process.env.MAX_COMMENTS || '100 (padrão)',
       rateLimit: `${process.env.RATE_LIMIT_MAX_REQUESTS || 10} req/${(process.env.RATE_LIMIT_WINDOW || 900) / 60}min`
     },
@@ -115,6 +138,7 @@ app.get('/', (req, res) => {
   
   console.log('📊 Status da API consultado:', {
     ip: req.ip,
+    origin: req.get('Origin'),
     userAgent: req.get('User-Agent'),
     timestamp: new Date().toISOString()
   });
@@ -252,15 +276,23 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Start server
+// Start server - MELHORADO
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 10} req/${(process.env.RATE_LIMIT_WINDOW || 900) / 60}min`);
   
+  // Log CORS configuration
+  const corsOrigins = process.env.CORS_ORIGINS ? 
+    process.env.CORS_ORIGINS.split(',').map(url => url.trim()) : 
+    ['https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com', 'http://localhost:5173'];
+  
+  console.log('🌐 CORS configurado para:', corsOrigins);
+  
   // Initialize scraper on startup
   await initializeScraper();
   
   console.log('✅ API pronta para receber requisições');
-  console.log(`📍 Teste: GET ${PORT === 80 || PORT === 443 ? '' : ':' + PORT}/`);
+  console.log(`📍 Teste: GET http://localhost:${PORT}/`);
+  console.log(`🔗 URL pública: https://insta-comment-finder-production.up.railway.app/`);
 });
