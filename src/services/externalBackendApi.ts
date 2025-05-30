@@ -1,4 +1,3 @@
-
 export interface ExternalBackendComment {
   id: string;
   username: string;
@@ -26,7 +25,7 @@ class ExternalBackendApi {
 
   constructor() {
     // URL do seu backend no Render
-    this.baseUrl = 'https://insta-comment-finder-1.onrender.com';
+    this.baseUrl = 'https://insta-comment-finder.onrender.com';
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
