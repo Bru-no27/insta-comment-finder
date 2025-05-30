@@ -87,20 +87,39 @@ async function initializeScraper() {
   }
 }
 
-// Root route - API status
+// Root route - API status with detailed information
 app.get('/', (req, res) => {
-  res.json({
-    status: 'API running',
+  const status = {
+    status: '✅ API FUNCIONANDO',
     service: 'Instagram Comment Finder',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    scraper: scraper ? 'initialized' : 'not_initialized',
+    scraper: scraper ? '✅ Inicializado' : '⚠️ Não inicializado',
+    configuration: {
+      botUsername: process.env.BOT_USERNAME ? '✅ Configurado' : '❌ Faltando',
+      botPassword: process.env.BOT_PASSWORD ? '✅ Configurado' : '❌ Faltando',
+      corsOrigins: process.env.CORS_ORIGINS ? '✅ Configurado' : '⚠️ Usando padrão',
+      maxComments: process.env.MAX_COMMENTS || '100 (padrão)',
+      rateLimit: `${process.env.RATE_LIMIT_MAX_REQUESTS || 10} req/${(process.env.RATE_LIMIT_WINDOW || 900) / 60}min`
+    },
     endpoints: {
-      health: '/api/health',
-      comments: '/api/instagram-comments (POST)'
+      health: 'GET /api/health',
+      comments: 'POST /api/instagram-comments'
+    },
+    usage: {
+      description: 'Esta é uma API REST para extrair comentários do Instagram',
+      example: 'POST /api/instagram-comments com { "postUrl": "https://instagram.com/p/..." }'
     }
+  };
+  
+  console.log('📊 Status da API consultado:', {
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString()
   });
+  
+  res.json(status);
 });
 
 // Health check route
@@ -121,6 +140,8 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
 
   console.log('🚀 Nova requisição de scraping recebida');
   console.log('📱 Post URL:', postUrl);
+  console.log('🌐 Origin:', req.get('Origin'));
+  console.log('🔍 User-Agent:', req.get('User-Agent'));
 
   if (!postUrl) {
     return res.status(400).json({
