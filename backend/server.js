@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
+const corsConfig = require('./cors-config');
 const InstagramScraper = require('./scrapers/InstagramScraper');
 
 const app = express();
@@ -20,29 +21,13 @@ const rateLimiter = new RateLimiterMemory({
   duration: parseInt(process.env.RATE_LIMIT_WINDOW) || 900,
 });
 
-// CORS configuração simplificada e permissiva
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Permitir requisições sem origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Permitir qualquer origin para debug
-    console.log('🌐 CORS Origin:', origin);
-    callback(null, true);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
-  optionsSuccessStatus: 200
-};
-
 // Middleware na ordem correta
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS PRIMEIRO
-app.use(cors(corsOptions));
+// CORS usando configuração externa
+app.use(cors(corsConfig));
 
 // Logs das requisições
 app.use((req, res, next) => {
@@ -102,6 +87,8 @@ async function initializeScraper() {
   }
 }
 
+// ======= ROTAS =======
+
 // Root route
 app.get('/', (req, res) => {
   console.log('📍 ROOT ACCESS');
@@ -112,7 +99,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     scraper: scraper ? 'Inicializado' : 'Não inicializado',
-    cors: 'PERMISSIVO',
+    cors: 'ULTRA-PERMISSIVO',
     routes: {
       'GET /': 'Status do servidor',
       'GET /api/health': 'Health check',
@@ -139,7 +126,7 @@ app.get('/api/health', (req, res) => {
 
 // Main scraping endpoint - APENAS POST
 app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
-  console.log('🚀 === POST /api/instagram-comments ===');
+  console.log('🎯 === POST /api/instagram-comments RECEBIDO ===');
   console.log('📦 Body:', JSON.stringify(req.body, null, 2));
   console.log('🌐 Headers:', JSON.stringify(req.headers, null, 2));
 
@@ -194,6 +181,19 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
       status: 'error',
       error: error.message,
       message: 'Erro ao extrair comentários'
+    });
+  }
+});
+
+// IMPORTANTE: Bloquear outros métodos na rota de comments explicitamente
+app.all('/api/instagram-comments', (req, res) => {
+  if (req.method !== 'POST') {
+    console.log(`❌ Método ${req.method} não permitido em /api/instagram-comments`);
+    res.status(405).json({
+      status: 'error',
+      error: `Método ${req.method} não permitido`,
+      allowedMethods: ['POST'],
+      message: 'Esta rota aceita apenas requisições POST'
     });
   }
 });
