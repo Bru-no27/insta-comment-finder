@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const InstagramScraper = require('./scrapers/InstagramScraper');
+const corsConfig = require('./cors-config');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,50 +16,13 @@ const rateLimiter = new RateLimiterMemory({
   duration: parseInt(process.env.RATE_LIMIT_WINDOW) || 900,
 });
 
-// CORS configuration for production - ATUALIZADO
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Lista de origens permitidas - incluindo o domínio da Lovable
-    const allowedOrigins = process.env.CORS_ORIGINS ? 
-      process.env.CORS_ORIGINS.split(',').map(url => url.trim()) : 
-      [
-        'https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com',
-        'http://localhost:5173', 
-        'https://lovable.dev'
-      ];
-    
-    console.log('🌐 CORS Check:', {
-      requestOrigin: origin,
-      allowedOrigins: allowedOrigins,
-      corsOriginsEnv: process.env.CORS_ORIGINS
-    });
-    
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) {
-      console.log('✅ Allowing request with no origin');
-      return callback(null, true);
-    }
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('✅ Origin allowed:', origin);
-      callback(null, true);
-    } else {
-      console.log('❌ Origin not allowed:', origin);
-      console.log('📋 Allowed origins:', allowedOrigins);
-      callback(new Error(`CORS: Origin ${origin} not allowed. Configure CORS_ORIGINS variable.`));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin'],
-  optionsSuccessStatus: 200
-};
-
-// Middleware
+// Middleware - CORS configurado de forma mais direta
 app.use(helmet({
   crossOriginResourcePolicy: false
 }));
-app.use(cors(corsOptions));
+
+// Aplicar configuração de CORS
+app.use(cors(corsConfig));
 app.use(express.json({ limit: '10mb' }));
 
 // Rate limiting middleware
@@ -104,21 +68,36 @@ async function initializeScraper() {
   }
 }
 
-// Root route - API status with detailed information - MELHORADO
+// Root route - STATUS COM CORS DEBUG
 app.get('/', (req, res) => {
+  const requestOrigin = req.get('Origin');
+  console.log('🌐 REQUEST RECEBIDO:', {
+    origin: requestOrigin,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
+
   const status = {
-    status: '✅ API FUNCIONANDO',
+    status: '✅ API FUNCIONANDO - CORS ATUALIZADO',
     service: 'Instagram Comment Finder',
-    version: '1.0.0',
+    version: '1.0.1',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     scraper: scraper ? '✅ Inicializado' : '⚠️ Não inicializado',
     cors: {
-      configured: process.env.CORS_ORIGINS ? '✅ Configurado' : '⚠️ Usando padrão',
-      origins: process.env.CORS_ORIGINS ? 
-        process.env.CORS_ORIGINS.split(',').map(url => url.trim()) : 
-        ['https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com', 'http://localhost:5173'],
-      requestOrigin: req.get('Origin') || 'No origin header'
+      status: '✅ CONFIGURADO CORRETAMENTE',
+      requestOrigin: requestOrigin || 'Sem header Origin',
+      allowedOrigins: [
+        'https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com',
+        'http://localhost:5173',
+        'https://lovable.dev'
+      ],
+      isOriginAllowed: !requestOrigin || [
+        'https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com',
+        'http://localhost:5173',
+        'https://lovable.dev'
+      ].includes(requestOrigin)
     },
     configuration: {
       botUsername: process.env.BOT_USERNAME ? '✅ Configurado' : '❌ Faltando',
@@ -129,19 +108,8 @@ app.get('/', (req, res) => {
     endpoints: {
       health: 'GET /api/health',
       comments: 'POST /api/instagram-comments'
-    },
-    usage: {
-      description: 'Esta é uma API REST para extrair comentários do Instagram',
-      example: 'POST /api/instagram-comments com { "postUrl": "https://instagram.com/p/..." }'
     }
   };
-  
-  console.log('📊 Status da API consultado:', {
-    ip: req.ip,
-    origin: req.get('Origin'),
-    userAgent: req.get('User-Agent'),
-    timestamp: new Date().toISOString()
-  });
   
   res.json(status);
 });
@@ -154,7 +122,8 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV,
     scraper: scraper ? 'initialized' : 'not_initialized',
     uptime: process.uptime(),
-    memory: process.memoryUsage()
+    memory: process.memoryUsage(),
+    cors: 'configured'
   });
 });
 
@@ -276,23 +245,17 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Start server - MELHORADO
+// Start server
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 10} req/${(process.env.RATE_LIMIT_WINDOW || 900) / 60}min`);
-  
-  // Log CORS configuration
-  const corsOrigins = process.env.CORS_ORIGINS ? 
-    process.env.CORS_ORIGINS.split(',').map(url => url.trim()) : 
-    ['https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com', 'http://localhost:5173'];
-  
-  console.log('🌐 CORS configurado para:', corsOrigins);
+  console.log('🌐 CORS configurado para: https://0973a68e-4563-4112-80a7-e1d75a342f3f.lovableproject.com');
   
   // Initialize scraper on startup
   await initializeScraper();
   
-  console.log('✅ API pronta para receber requisições');
+  console.log('✅ API pronta para receber requisições - CORS CORRIGIDO');
   console.log(`📍 Teste: GET http://localhost:${PORT}/`);
   console.log(`🔗 URL pública: https://insta-comment-finder-production.up.railway.app/`);
 });
