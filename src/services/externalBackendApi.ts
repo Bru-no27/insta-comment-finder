@@ -23,132 +23,155 @@ export interface ExternalBackendResponse {
 
 class ExternalBackendApi {
   private baseUrl: string;
+  private fallbackUrls: string[];
 
   constructor() {
-    // URL do backend no Railway - configurada corretamente
     this.baseUrl = 'https://insta-comment-finder-production.up.railway.app';
+    this.fallbackUrls = [
+      'https://insta-comment-finder-production.up.railway.app',
+      // Adicione outras URLs de fallback se necessário
+    ];
     console.log('🔧 Backend URL configurada:', this.baseUrl);
   }
 
-  async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
-    const fullUrl = `${this.baseUrl}/api/instagram-comments`;
-    console.log(`🚀 REQUISIÇÃO: ${fullUrl}`);
-    console.log(`📱 POST URL: ${postUrl}`);
-    console.log(`🌐 ORIGIN ATUAL: ${window.location.origin}`);
-    
+  private async testConnection(url: string): Promise<boolean> {
     try {
-      console.log('🔍 TESTANDO CONECTIVIDADE...');
-      
-      // Primeiro, teste simples de conectividade
-      const healthResponse = await fetch(`${this.baseUrl}/api/health`, {
+      console.log(`🔍 Testando conexão com: ${url}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(`${url}/api/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
       });
-      
-      console.log(`📊 HEALTH CHECK STATUS: ${healthResponse.status}`);
-      
-      if (!healthResponse.ok) {
-        console.error('❌ HEALTH CHECK FALHOU:', healthResponse.status);
-      } else {
-        const healthData = await healthResponse.text();
-        console.log('✅ HEALTH CHECK SUCESSO:', healthData);
-      }
 
-      // Agora tenta a requisição principal
-      console.log('🚀 FAZENDO REQUISIÇÃO PRINCIPAL...');
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.text();
+        console.log(`✅ Conexão OK com ${url}:`, data.substring(0, 200));
+        return true;
+      } else {
+        console.log(`❌ Conexão falhou com ${url}: Status ${response.status}`);
+        return false;
+      }
+    } catch (error) {
+      console.log(`❌ Erro de conexão com ${url}:`, error.message);
+      return false;
+    }
+  }
+
+  private async findWorkingBackend(): Promise<string | null> {
+    for (const url of this.fallbackUrls) {
+      const isWorking = await this.testConnection(url);
+      if (isWorking) {
+        console.log(`✅ Backend funcionando encontrado: ${url}`);
+        return url;
+      }
+    }
+    console.log('❌ Nenhum backend funcionando encontrado');
+    return null;
+  }
+
+  async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
+    console.log(`🚀 DIAGNÓSTICO COMPLETO INICIADO`);
+    console.log(`📱 Post URL: ${postUrl}`);
+    console.log(`🌐 Origin atual: ${window.location.origin}`);
+    console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
+
+    // Primeiro, encontrar um backend que funcione
+    const workingBackend = await this.findWorkingBackend();
+    
+    if (!workingBackend) {
+      throw new Error(`❌ BACKEND INACESSÍVEL
+
+🔍 Diagnóstico realizado em: ${new Date().toLocaleString('pt-BR')}
+
+📊 Status dos serviços testados:
+${this.fallbackUrls.map(url => `❌ ${url} - Inacessível`).join('\n')}
+
+🔧 SOLUÇÕES POSSÍVEIS:
+
+1️⃣ VERIFICAR RAILWAY:
+   • Acesse: railway.app
+   • Projeto: insta-comment-finder-production
+   • Status: Verificar se está rodando
+
+2️⃣ VERIFICAR VARIÁVEIS:
+   • CORS_ORIGINS=${window.location.origin}
+   • BOT_USERNAME=seu_bot_username
+   • BOT_PASSWORD=sua_senha_bot
+
+3️⃣ REDEPLOY:
+   • No Railway, clique em "Redeploy"
+   • Aguarde 3-5 minutos
+
+4️⃣ LOGS DO RAILWAY:
+   • Vá em "Deployments" > "View Logs"
+   • Procure por erros de inicialização
+
+❗ O backend parece estar offline ou com problemas de configuração.`);
+    }
+
+    // Tentar a requisição principal
+    const fullUrl = `${workingBackend}/api/instagram-comments`;
+    console.log(`🚀 Fazendo requisição para: ${fullUrl}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Origin': window.location.origin,
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ postUrl }),
+        signal: controller.signal,
       });
 
-      console.log(`📊 RESPONSE STATUS: ${response.status}`);
-      console.log(`📊 RESPONSE OK: ${response.ok}`);
+      clearTimeout(timeoutId);
+
+      console.log(`📊 Response status: ${response.status}`);
+      console.log(`📊 Response ok: ${response.ok}`);
       
-      // Log dos headers de resposta
-      const responseHeaders: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-      console.log(`📊 RESPONSE HEADERS:`, responseHeaders);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`❌ ERRO HTTP ${response.status}:`, errorText);
+        console.error(`❌ Erro HTTP ${response.status}:`, errorText);
         
-        // Tratamento específico para diferentes códigos de erro
         if (response.status === 429) {
-          let data;
-          try {
-            data = JSON.parse(errorText);
-          } catch {
-            data = {};
-          }
-          throw new Error(`Muitas requisições. Tente novamente em ${data.retryAfter || 15} minutos.`);
+          throw new Error(`Muitas requisições. Aguarde alguns minutos antes de tentar novamente.`);
         }
         
-        if (response.status === 0 || response.status === 500) {
-          throw new Error(`Erro de servidor (${response.status}). Backend pode estar offline ou com problemas de configuração.`);
+        if (response.status === 400) {
+          throw new Error(`URL inválida. Verifique se é uma URL válida do Instagram.`);
         }
         
-        if (response.status === 403 || response.status === 405) {
-          throw new Error(`Erro de CORS ou método não permitido (${response.status}). Verifique se as variáveis CORS_ORIGINS estão configuradas no Railway.`);
+        if (response.status === 500) {
+          throw new Error(`Erro interno do servidor. Verifique se as credenciais do bot estão configuradas no Railway.`);
         }
         
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText || 'Erro desconhecido no servidor' };
-        }
-        
-        throw new Error(errorData.message || `Erro HTTP ${response.status}: ${errorText}`);
+        throw new Error(`Erro HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log(`✅ DADOS RECEBIDOS:`, data);
+      console.log(`✅ Dados recebidos com sucesso:`, {
+        status: data.status,
+        totalComments: data.comments?.length || 0,
+        message: data.message
+      });
+      
       return data;
 
     } catch (networkError) {
-      console.error(`❌ ERRO DE REDE DETALHADO:`, {
-        name: networkError.name,
-        message: networkError.message,
-        stack: networkError.stack,
-        toString: networkError.toString()
-      });
+      console.error(`❌ Erro na requisição:`, networkError);
       
-      // Análise mais detalhada do erro
-      if (networkError.name === 'TypeError') {
-        if (networkError.message.includes('fetch')) {
-          throw new Error(`❌ ERRO DE CONECTIVIDADE:
-          
-🔗 Backend: ${this.baseUrl}
-🌐 Frontend: ${window.location.origin}
-
-✅ Próximos passos para resolver:
-1. Acesse o painel do Railway: railway.app
-2. Entre no projeto: insta-comment-finder-production
-3. Vá em "Variables" e confirme que CORS_ORIGINS está configurado com:
-   ${window.location.origin}
-4. Se necessário, force um redeploy do backend
-
-📌 Variáveis necessárias no Railway:
-- CORS_ORIGINS=${window.location.origin}
-- BOT_USERNAME=sua_conta_bot
-- BOT_PASSWORD=sua_senha_bot`);
-        }
-        
-        if (networkError.message.includes('CORS')) {
-          throw new Error(`❌ ERRO DE CORS:
-          
-Configure no Railway a variável:
-CORS_ORIGINS=${window.location.origin}`);
-        }
+      if (networkError.name === 'AbortError') {
+        throw new Error(`⏱️ Timeout: O servidor demorou mais de 30 segundos para responder. Tente novamente.`);
       }
       
       throw new Error(`❌ Erro de rede: ${networkError.message}`);
@@ -161,6 +184,7 @@ CORS_ORIGINS=${window.location.origin}`);
 
   setBackendUrl(url: string): void {
     this.baseUrl = url;
+    this.fallbackUrls = [url, ...this.fallbackUrls.filter(u => u !== url)];
     console.log(`🔧 URL do backend atualizada para: ${url}`);
   }
 }
