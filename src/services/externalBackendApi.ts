@@ -29,6 +29,7 @@ class ExternalBackendApi {
     this.baseUrl = 'https://insta-comment-finder-production.up.railway.app';
     this.fallbackUrls = [
       'https://insta-comment-finder-production.up.railway.app',
+      'https://insta-comment-finder-production-production.up.railway.app', // Possível URL alternativa
       // Adicione outras URLs de fallback se necessário
     ];
     console.log('🔧 Backend URL configurada:', this.baseUrl);
@@ -38,14 +39,16 @@ class ExternalBackendApi {
     try {
       console.log(`🔍 Testando conexão com: ${url}`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-      const response = await fetch(`${url}/api/health`, {
+      const response = await fetch(`${url}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         signal: controller.signal,
+        mode: 'cors',
       });
 
       clearTimeout(timeoutId);
@@ -65,21 +68,27 @@ class ExternalBackendApi {
   }
 
   private async findWorkingBackend(): Promise<string | null> {
+    console.log('🔍 Procurando backend funcionando...');
+    
     for (const url of this.fallbackUrls) {
       const isWorking = await this.testConnection(url);
       if (isWorking) {
         console.log(`✅ Backend funcionando encontrado: ${url}`);
         return url;
       }
+      
+      // Aguardar 1 segundo entre testes
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    
     console.log('❌ Nenhum backend funcionando encontrado');
     return null;
   }
 
   async fetchInstagramComments(postUrl: string): Promise<ExternalBackendResponse> {
-    console.log(`🚀 DIAGNÓSTICO COMPLETO INICIADO`);
+    console.log(`🚀 INICIANDO BUSCA DE COMENTÁRIOS`);
     console.log(`📱 Post URL: ${postUrl}`);
-    console.log(`🌐 Origin atual: ${window.location.origin}`);
+    console.log(`🌐 Origin: ${window.location.origin}`);
     console.log(`🕒 Timestamp: ${new Date().toISOString()}`);
 
     // Primeiro, encontrar um backend que funcione
@@ -93,27 +102,28 @@ class ExternalBackendApi {
 📊 Status dos serviços testados:
 ${this.fallbackUrls.map(url => `❌ ${url} - Inacessível`).join('\n')}
 
-🔧 SOLUÇÕES POSSÍVEIS:
+💡 PRÓXIMOS PASSOS:
 
-1️⃣ VERIFICAR RAILWAY:
-   • Acesse: railway.app
-   • Projeto: insta-comment-finder-production
-   • Status: Verificar se está rodando
+1️⃣ TESTE MANUAL:
+   • Abra nova aba: ${this.baseUrl}/
+   • Se carregar = backend OK, problema é CORS
+   • Se não carregar = backend offline
 
-2️⃣ VERIFICAR VARIÁVEIS:
-   • CORS_ORIGINS=${window.location.origin}
-   • BOT_USERNAME=seu_bot_username
-   • BOT_PASSWORD=sua_senha_bot
+2️⃣ RAILWAY LOGS:
+   • Acesse: railway.app → projeto
+   • Deployments → View Logs
+   • Procure por erros
 
 3️⃣ REDEPLOY:
-   • No Railway, clique em "Redeploy"
+   • No Railway: Redeploy
    • Aguarde 3-5 minutos
 
-4️⃣ LOGS DO RAILWAY:
-   • Vá em "Deployments" > "View Logs"
-   • Procure por erros de inicialização
+4️⃣ DNS/CONECTIVIDADE:
+   • Teste em rede diferente
+   • Desabilite VPN se ativo
+   • Teste no celular (4G)
 
-❗ O backend parece estar offline ou com problemas de configuração.`);
+O backend parece estar rodando segundo os logs, mas não conseguimos conectar.`);
     }
 
     // Tentar a requisição principal
@@ -122,22 +132,25 @@ ${this.fallbackUrls.map(url => `❌ ${url} - Inacessível`).join('\n')}
     
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
 
       const response = await fetch(fullUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'Origin': window.location.origin,
         },
         body: JSON.stringify({ postUrl }),
         signal: controller.signal,
+        mode: 'cors',
+        credentials: 'include',
       });
 
       clearTimeout(timeoutId);
 
       console.log(`📊 Response status: ${response.status}`);
-      console.log(`📊 Response ok: ${response.ok}`);
+      console.log(`📊 Response headers:`, Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -152,14 +165,14 @@ ${this.fallbackUrls.map(url => `❌ ${url} - Inacessível`).join('\n')}
         }
         
         if (response.status === 500) {
-          throw new Error(`Erro interno do servidor. Verifique se as credenciais do bot estão configuradas no Railway.`);
+          throw new Error(`Erro interno do servidor. Verifique as credenciais do bot no Railway.`);
         }
         
         throw new Error(`Erro HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log(`✅ Dados recebidos com sucesso:`, {
+      console.log(`✅ Dados recebidos:`, {
         status: data.status,
         totalComments: data.comments?.length || 0,
         message: data.message
@@ -171,7 +184,11 @@ ${this.fallbackUrls.map(url => `❌ ${url} - Inacessível`).join('\n')}
       console.error(`❌ Erro na requisição:`, networkError);
       
       if (networkError.name === 'AbortError') {
-        throw new Error(`⏱️ Timeout: O servidor demorou mais de 30 segundos para responder. Tente novamente.`);
+        throw new Error(`⏱️ Timeout: Servidor demorou mais de 45 segundos para responder.`);
+      }
+      
+      if (networkError.message?.includes('CORS')) {
+        throw new Error(`❌ ERRO CORS: O backend precisa autorizar o domínio: ${window.location.origin}`);
       }
       
       throw new Error(`❌ Erro de rede: ${networkError.message}`);
