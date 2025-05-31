@@ -26,18 +26,21 @@ app.use(helmet({
   crossOriginResourcePolicy: false
 }));
 
-// Log de todas as requisições
+// Log de todas as requisições com mais detalhes
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.path}`, {
     origin: req.get('Origin'),
     userAgent: req.get('User-Agent')?.substring(0, 50),
-    ip: req.ip
+    ip: req.ip,
+    contentType: req.get('Content-Type')
   });
   next();
 });
 
-// CORS configurado
+// CORS configurado ANTES de express.json
 app.use(cors(corsConfig));
+
+// Body parser DEPOIS do CORS
 app.use(express.json({ limit: '10mb' }));
 
 // Rate limiting middleware
@@ -83,6 +86,15 @@ async function initializeScraper() {
   }
 }
 
+// OPTIONS handler para CORS preflight
+app.options('*', (req, res) => {
+  console.log('✅ OPTIONS request handled for:', req.path);
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept');
+  res.sendStatus(200);
+});
+
 // Root route - STATUS SIMPLIFICADO
 app.get('/', (req, res) => {
   console.log('📍 ROOT ACCESS - enviando status');
@@ -94,6 +106,11 @@ app.get('/', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     scraper: scraper ? 'Inicializado' : 'Não inicializado',
     cors: 'PERMISSIVO (debug)',
+    availableRoutes: [
+      'GET /',
+      'GET /api/health',
+      'POST /api/instagram-comments'
+    ],
     config: {
       botUsername: process.env.BOT_USERNAME ? 'OK' : 'FALTANDO',
       botPassword: process.env.BOT_PASSWORD ? 'OK' : 'FALTANDO'
@@ -113,8 +130,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Main scraping endpoint
+// Main scraping endpoint - GARANTINDO que seja POST
 app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
+  console.log('🚀 POST /api/instagram-comments - REQUISIÇÃO RECEBIDA');
+  console.log('📦 Body:', req.body);
+  console.log('🌐 Headers:', req.headers);
+
   const { postUrl } = req.body;
   
   console.log('🚀 NOVA REQUISIÇÃO DE SCRAPING');
@@ -122,6 +143,7 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   console.log('🌐 Origin:', req.get('Origin'));
 
   if (!postUrl) {
+    console.log('❌ URL do post não fornecida');
     return res.status(400).json({
       status: 'error',
       error: 'URL do post é obrigatória'
@@ -129,6 +151,7 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   }
 
   if (!postUrl.includes('instagram.com')) {
+    console.log('❌ URL inválida:', postUrl);
     return res.status(400).json({
       status: 'error',
       error: 'URL inválida - deve ser do Instagram'
@@ -172,12 +195,27 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   }
 });
 
+// Capturar tentativas de GET na rota POST
+app.get('/api/instagram-comments', (req, res) => {
+  console.log('❌ GET não permitido em /api/instagram-comments');
+  res.status(405).json({
+    status: 'error',
+    error: 'Método GET não permitido. Use POST.',
+    allowedMethods: ['POST']
+  });
+});
+
 // 404 handler
 app.use('*', (req, res) => {
-  console.log('❌ 404 - Rota não encontrada:', req.path);
+  console.log('❌ 404 - Rota não encontrada:', req.method, req.path);
   res.status(404).json({
     status: 'error',
-    error: 'Endpoint não encontrado'
+    error: 'Endpoint não encontrado',
+    availableRoutes: [
+      'GET /',
+      'GET /api/health', 
+      'POST /api/instagram-comments'
+    ]
   });
 });
 
@@ -194,9 +232,11 @@ app.use((error, req, res, next) => {
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
   console.log('✅ Pronto para receber requisições');
+  console.log('📍 Rotas disponíveis:');
+  console.log('  GET  / - Status do servidor');
+  console.log('  GET  /api/health - Health check');
+  console.log('  POST /api/instagram-comments - Scraping de comentários');
   
   // Initialize scraper on startup
   await initializeScraper();
-  
-  console.log('📍 Teste direto: curl http://localhost:' + PORT + '/');
 });
