@@ -185,17 +185,35 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   }
 });
 
-// IMPORTANTE: Bloquear outros métodos na rota de comments explicitamente
-app.all('/api/instagram-comments', (req, res) => {
-  if (req.method !== 'POST') {
-    console.log(`❌ Método ${req.method} não permitido em /api/instagram-comments`);
-    res.status(405).json({
-      status: 'error',
-      error: `Método ${req.method} não permitido`,
-      allowedMethods: ['POST'],
-      message: 'Esta rota aceita apenas requisições POST'
-    });
-  }
+// Bloquear outros métodos HTTP na rota de comments (GET, PUT, DELETE, etc.)
+app.get('/api/instagram-comments', (req, res) => {
+  console.log('❌ Método GET não permitido em /api/instagram-comments');
+  res.status(405).json({
+    status: 'error',
+    error: 'Método GET não permitido',
+    allowedMethods: ['POST'],
+    message: 'Esta rota aceita apenas requisições POST'
+  });
+});
+
+app.put('/api/instagram-comments', (req, res) => {
+  console.log('❌ Método PUT não permitido em /api/instagram-comments');
+  res.status(405).json({
+    status: 'error',
+    error: 'Método PUT não permitido',
+    allowedMethods: ['POST'],
+    message: 'Esta rota aceita apenas requisições POST'
+  });
+});
+
+app.delete('/api/instagram-comments', (req, res) => {
+  console.log('❌ Método DELETE não permitido em /api/instagram-comments');
+  res.status(405).json({
+    status: 'error',
+    error: 'Método DELETE não permitido',
+    allowedMethods: ['POST'],
+    message: 'Esta rota aceita apenas requisições POST'
+  });
 });
 
 // 404 handler - DEVE FICAR POR ÚLTIMO
