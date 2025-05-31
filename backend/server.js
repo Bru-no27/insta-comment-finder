@@ -5,7 +5,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 const InstagramScraper = require('./scrapers/InstagramScraper');
-const corsConfig = require('./cors-config');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,14 +20,33 @@ const rateLimiter = new RateLimiterMemory({
   duration: parseInt(process.env.RATE_LIMIT_WINDOW) || 900,
 });
 
-// Middleware simplificado
+// CORS configuração simplificada e permissiva
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Permitir qualquer origin para debug
+    console.log('🌐 CORS Origin:', origin);
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
+// Middleware na ordem correta
 app.use(helmet({
-  crossOriginResourcePolicy: false
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Log de todas as requisições com mais detalhes
+// CORS PRIMEIRO
+app.use(cors(corsOptions));
+
+// Logs das requisições
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.path}`, {
+  console.log(`📥 ${new Date().toISOString()} ${req.method} ${req.path}`, {
     origin: req.get('Origin'),
     userAgent: req.get('User-Agent')?.substring(0, 50),
     ip: req.ip,
@@ -37,11 +55,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS configurado ANTES de express.json
-app.use(cors(corsConfig));
-
-// Body parser DEPOIS do CORS
+// Body parser
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting middleware
 const rateLimitMiddleware = async (req, res, next) => {
@@ -86,18 +102,9 @@ async function initializeScraper() {
   }
 }
 
-// OPTIONS handler para CORS preflight
-app.options('*', (req, res) => {
-  console.log('✅ OPTIONS request handled for:', req.path);
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept');
-  res.sendStatus(200);
-});
-
-// Root route - STATUS SIMPLIFICADO
+// Root route
 app.get('/', (req, res) => {
-  console.log('📍 ROOT ACCESS - enviando status');
+  console.log('📍 ROOT ACCESS');
   
   const status = {
     status: '✅ SERVIDOR ONLINE',
@@ -105,22 +112,22 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     scraper: scraper ? 'Inicializado' : 'Não inicializado',
-    cors: 'PERMISSIVO (debug)',
-    availableRoutes: [
-      'GET /',
-      'GET /api/health',
-      'POST /api/instagram-comments'
-    ],
+    cors: 'PERMISSIVO',
+    routes: {
+      'GET /': 'Status do servidor',
+      'GET /api/health': 'Health check',
+      'POST /api/instagram-comments': 'Scraping de comentários'
+    },
     config: {
-      botUsername: process.env.BOT_USERNAME ? 'OK' : 'FALTANDO',
-      botPassword: process.env.BOT_PASSWORD ? 'OK' : 'FALTANDO'
+      botUsername: process.env.BOT_USERNAME ? '✅ OK' : '❌ FALTANDO',
+      botPassword: process.env.BOT_PASSWORD ? '✅ OK' : '❌ FALTANDO'
     }
   };
   
   res.json(status);
 });
 
-// Health check route
+// Health check
 app.get('/api/health', (req, res) => {
   console.log('🏥 HEALTH CHECK');
   res.json({
@@ -130,18 +137,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Main scraping endpoint - GARANTINDO que seja POST
+// Main scraping endpoint - APENAS POST
 app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
-  console.log('🚀 POST /api/instagram-comments - REQUISIÇÃO RECEBIDA');
-  console.log('📦 Body:', req.body);
-  console.log('🌐 Headers:', req.headers);
+  console.log('🚀 === POST /api/instagram-comments ===');
+  console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+  console.log('🌐 Headers:', JSON.stringify(req.headers, null, 2));
 
   const { postUrl } = req.body;
   
-  console.log('🚀 NOVA REQUISIÇÃO DE SCRAPING');
-  console.log('📱 URL:', postUrl);
-  console.log('🌐 Origin:', req.get('Origin'));
-
   if (!postUrl) {
     console.log('❌ URL do post não fornecida');
     return res.status(400).json({
@@ -171,7 +174,7 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   }
 
   try {
-    console.log('⏳ Iniciando scraping...');
+    console.log('⏳ Iniciando scraping de:', postUrl);
     const result = await scraper.scrapeComments(postUrl);
     
     console.log(`✅ Scraping concluído: ${result.comments.length} comentários`);
@@ -195,22 +198,12 @@ app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   }
 });
 
-// Capturar tentativas de GET na rota POST
-app.get('/api/instagram-comments', (req, res) => {
-  console.log('❌ GET não permitido em /api/instagram-comments');
-  res.status(405).json({
-    status: 'error',
-    error: 'Método GET não permitido. Use POST.',
-    allowedMethods: ['POST']
-  });
-});
-
-// 404 handler
+// 404 handler - DEVE FICAR POR ÚLTIMO
 app.use('*', (req, res) => {
-  console.log('❌ 404 - Rota não encontrada:', req.method, req.path);
+  console.log(`❌ 404 - Rota não encontrada: ${req.method} ${req.path}`);
   res.status(404).json({
     status: 'error',
-    error: 'Endpoint não encontrado',
+    error: `Endpoint não encontrado: ${req.method} ${req.path}`,
     availableRoutes: [
       'GET /',
       'GET /api/health', 
@@ -230,7 +223,7 @@ app.use((error, req, res, next) => {
 
 // Start server
 app.listen(PORT, async () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log('✅ Pronto para receber requisições');
   console.log('📍 Rotas disponíveis:');
   console.log('  GET  / - Status do servidor');

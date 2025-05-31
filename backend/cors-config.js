@@ -1,13 +1,22 @@
 
-// Configuração CORS extremamente simples e permissiva para debug
+// CORS configuração EXTREMAMENTE permissiva para resolver problemas
 const corsConfig = {
-  origin: true, // Permite qualquer origin temporariamente para debug
+  origin: true, // Aceita qualquer origin
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
-  optionsSuccessStatus: 200
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'Origin', 
+    'Accept',
+    'X-Requested-With',
+    'Access-Control-Allow-Origin'
+  ],
+  exposedHeaders: ['*'],
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 };
 
-console.log('🌐 CORS configurado de forma PERMISSIVA para debug');
+console.log('🌐 CORS: Configuração ULTRA-PERMISSIVA ativada');
 
 module.exports = corsConfig;
