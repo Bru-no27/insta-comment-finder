@@ -21,24 +21,35 @@ const rateLimiter = new RateLimiterMemory({
   duration: parseInt(process.env.RATE_LIMIT_WINDOW) || 900,
 });
 
-// Middleware na ordem correta
+// Middleware na ordem correta - CORS PRIMEIRO
+console.log('🔧 Configurando CORS...');
+app.use(cors(corsConfig));
+
+// Middleware de log CORS detalhado
+app.use((req, res, next) => {
+  console.log(`🌐 CORS DEBUG: ${req.method} ${req.path}`, {
+    origin: req.get('Origin'),
+    userAgent: req.get('User-Agent')?.substring(0, 50),
+    contentType: req.get('Content-Type'),
+    headers: Object.keys(req.headers)
+  });
+  
+  // Adicionar headers CORS manualmente como fallback
+  const origin = req.get('Origin');
+  if (origin && origin.includes('lovable.app')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+  }
+  
+  next();
+});
+
+// Helmet depois do CORS
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-
-// CORS usando configuração externa
-app.use(cors(corsConfig));
-
-// Logs das requisições
-app.use((req, res, next) => {
-  console.log(`📥 ${new Date().toISOString()} ${req.method} ${req.path}`, {
-    origin: req.get('Origin'),
-    userAgent: req.get('User-Agent')?.substring(0, 50),
-    ip: req.ip,
-    contentType: req.get('Content-Type')
-  });
-  next();
-});
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));
@@ -99,7 +110,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
     scraper: scraper ? 'Inicializado' : 'Não inicializado',
-    cors: 'ULTRA-PERMISSIVO',
+    cors: 'LOVABLE-ESPECÍFICO',
     routes: {
       'GET /': 'Status do servidor',
       'GET /api/health': 'Health check',
@@ -124,11 +135,32 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Preflight OPTIONS para /api/instagram-comments
+app.options('/api/instagram-comments', (req, res) => {
+  console.log('✈️ PREFLIGHT OPTIONS para /api/instagram-comments');
+  console.log('🌐 Origin:', req.get('Origin'));
+  
+  const origin = req.get('Origin');
+  if (origin && origin.includes('lovable.app')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+  }
+  
+  res.status(200).end();
+});
+
 // Main scraping endpoint - APENAS POST
 app.post('/api/instagram-comments', rateLimitMiddleware, async (req, res) => {
   console.log('🎯 === POST /api/instagram-comments RECEBIDO ===');
   console.log('📦 Body:', JSON.stringify(req.body, null, 2));
-  console.log('🌐 Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('🌐 Origin:', req.get('Origin'));
+  console.log('🔑 Headers importantes:', {
+    contentType: req.get('Content-Type'),
+    authorization: req.get('Authorization'),
+    accept: req.get('Accept')
+  });
 
   const { postUrl } = req.body;
   
